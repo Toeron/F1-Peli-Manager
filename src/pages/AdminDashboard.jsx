@@ -8,6 +8,7 @@ export default function AdminDashboard() {
     const [races, setRaces] = useState([])
     const [drivers, setDrivers] = useState([])
     const [constructors, setConstructors] = useState([])
+    const [players, setPlayers] = useState([])
     const [selectedRace, setSelectedRace] = useState('')
     const [selectedSession, setSelectedSession] = useState('qualifying')
     const [results, setResults] = useState([])
@@ -33,6 +34,10 @@ export default function AdminDashboard() {
         const { data: constructorData } = await supabase
             .from('constructors').select('*').order('name')
         setConstructors(constructorData || [])
+
+        const { data: profilesData } = await supabase
+            .from('profiles').select('*').order('created_at', { ascending: false })
+        setPlayers(profilesData || [])
 
         setLoading(false)
     }
@@ -229,6 +234,26 @@ export default function AdminDashboard() {
         return d ? `${d.first_name} ${d.last_name}` : ''
     }
 
+    async function handleDeletePlayer(playerId, playerName) {
+        const confirmText = window.prompt(`Weet je zeker dat je speler "${playerName}" definitief wilt verwijderen?\n\nTyp 'VERWIJDER' in hoofdletters om te bevestigen:`)
+        if (confirmText !== 'VERWIJDER') {
+            if (confirmText !== null) addLog(`❌ Speler verwijderen geannuleerd.`)
+            return
+        }
+
+        setSaving(true)
+        addLog(`Verwijderen van speler ${playerName}...`)
+
+        const { error } = await supabase.rpc('delete_user_by_admin', { user_id_to_delete: playerId })
+        if (error) {
+            addLog(`❌ Fout bij verwijderen speler: ${error.message}`)
+        } else {
+            addLog(`✅ Speler ${playerName} definitief verwijderd.`)
+            await loadData()
+        }
+        setSaving(false)
+    }
+
     function formatPrice(val) {
         return '$' + (Number(val) / 1000000).toFixed(1) + 'M'
     }
@@ -284,6 +309,9 @@ export default function AdminDashboard() {
                     </button>
                     <button className={`session-tab ${tab === 'drivers' ? 'active' : ''}`} onClick={() => setTab('drivers')}>
                         👤 Beheer Coureurs
+                    </button>
+                    <button className={`session-tab ${tab === 'players' ? 'active' : ''}`} onClick={() => setTab('players')}>
+                        👥 Spelers
                     </button>
                     <button className={`session-tab ${tab === 'log' ? 'active' : ''}`} onClick={() => setTab('log')}>
                         📋 Log ({log.length})
@@ -483,6 +511,66 @@ export default function AdminDashboard() {
                                                     onChange={(e) => updateDriver(d.id, { active: e.target.checked })}
                                                     disabled={saving}
                                                 />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* ============= PLAYERS TAB ============= */}
+                {tab === 'players' && (
+                    <div className="card">
+                        <div style={{ marginBottom: 20 }}>
+                            <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Geregistreerde Spelers</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Beheer accounts in de applicatie. Verwijderde accounts kunnen niet hersteld worden.</p>
+                        </div>
+                        <div className="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Speler</th>
+                                        <th>Username</th>
+                                        <th>Punten / Budget</th>
+                                        <th>Admin</th>
+                                        <th style={{ textAlign: 'right' }}>Acties</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {players.map(p => (
+                                        <tr key={p.id}>
+                                            <td style={{ fontWeight: 600 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                    <div className="nav-avatar" style={{ width: 40, height: 40, fontSize: '1rem', overflow: 'hidden' }}>
+                                                        {p.avatar_url ? (
+                                                            <img src={p.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        ) : (
+                                                            (p.username || '?')[0].toUpperCase()
+                                                        )}
+                                                    </div>
+                                                    {p.display_name}
+                                                    {p.id === profile.id && <span style={{ fontSize: '0.65rem', color: 'var(--green)', marginLeft: 8 }}>(Jijzelf)</span>}
+                                                </div>
+                                            </td>
+                                            <td>@{p.username}</td>
+                                            <td>
+                                                <div style={{ color: 'var(--gold)', fontWeight: 600 }}>{p.total_points} pnt</div>
+                                                <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{formatPrice(p.budget)}</div>
+                                            </td>
+                                            <td>
+                                                {p.is_admin ? <span style={{ color: 'var(--green)' }}>✓</span> : <span style={{ opacity: 0.3 }}>-</span>}
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <button
+                                                    className="btn btn-secondary btn-small"
+                                                    style={{ color: 'var(--red)', borderColor: 'var(--red)', background: 'transparent' }}
+                                                    onClick={() => handleDeletePlayer(p.id, p.display_name || p.username)}
+                                                    disabled={saving || p.id === profile.id}
+                                                >
+                                                    Verwijderen
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

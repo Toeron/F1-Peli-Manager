@@ -351,7 +351,7 @@ export default function RaceResults() {
                                     return (
                                         <div key={r.id} className="results-podium-slot" style={{ order: [1, 0, 2][i] }}>
                                             <div style={{ position: 'relative' }}>
-                                                <DriverAvatar abbreviation={r.drivers?.abbreviation} name={r.drivers?.last_name} src={r.drivers?.avatar_url} size={i === 0 ? 128 : 104} />
+                                                <DriverAvatar abbreviation={r.drivers?.abbreviation} name={r.drivers?.last_name} src={r.drivers?.avatar_url} size={i === 0 ? 128 : 104} winning={true} />
                                                 {isTeam && (
                                                     <div style={{ position: 'absolute', top: -4, right: -4, background: 'var(--green)', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem' }}>🏎️</div>
                                                 )}

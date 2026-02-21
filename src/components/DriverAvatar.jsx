@@ -24,19 +24,23 @@ const driverIcons = {
     BOT: 'bottas',
 }
 
-export function getDriverIcon(abbreviation) {
-    const file = driverIcons[abbreviation]
+export function getDriverIcon(abbreviation, winning = false) {
+    let file = driverIcons[abbreviation]
     if (!file) return null
+    if (winning) {
+        if (file === 'bortoleto') file = 'borteletto' // Handle specific typo in gif filenames
+        return `/drivers/winning/${file}.gif`
+    }
     return `/drivers/${file}.png?v=2026`
 }
 
-export function DriverAvatar({ abbreviation, name, src, size = 40, className = '' }) {
-    let icon = src || getDriverIcon(abbreviation)
+export function DriverAvatar({ abbreviation, name, src, size = 40, className = '', winning = false }) {
+    let icon = (winning && getDriverIcon(abbreviation, true)) || src || getDriverIcon(abbreviation, false)
     if (icon && icon.startsWith('/drivers/') && !icon.includes('?')) {
         icon += '?v=2026'
     }
     return (
-        <div className={`driver-avatar ${className}`} style={{ width: size, height: size }}>
+        <div className={`driver-avatar ${className}`} style={{ width: size, height: size, background: winning ? '#fff' : undefined, borderRadius: '50%' }}>
             {icon ? (
                 <img src={icon} alt={name || abbreviation}
                     style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
