@@ -310,6 +310,25 @@ export default function AdminDashboard() {
         setSaving(false)
     }
 
+    async function saveCustomDeadline(newDateString) {
+        if (!newDateString) return
+        setSaving(true)
+        // newDateString from datetime-local is local time (e.g. "2024-03-02T15:00")
+        // We construct a new Date object using this local string so it correctly translates to UTC for the database
+        const localDate = new Date(newDateString)
+        const utcDate = localDate.toISOString()
+
+        addLog(`📅 Aangepaste deadline opslaan (${localDate.toLocaleString()})...`)
+        const { error } = await supabase.from('races')
+            .update({ lock_datetime: utcDate })
+            .eq('id', selectedRace)
+
+        if (error) addLog(`❌ Fout bij opslaan deadline: ${error.message}`)
+        else addLog('✅ Aanvangstijd en deadline succesvol gewijzigd!')
+        await loadData()
+        setSaving(false)
+    }
+
     function getDriverName(id) {
         const d = drivers.find(d => d.id === id)
         return d ? `${d.first_name} ${d.last_name}` : ''
@@ -478,14 +497,45 @@ export default function AdminDashboard() {
                             </button>
                         </div>
 
-                        {/* Test Tools Section */}
+                        {/* Test Tools & Race Settings Section */}
                         <div className="card" style={{ border: '1px solid var(--amber)', background: 'rgba(245, 166, 35, 0.05)' }}>
                             <h3 style={{ margin: '0 0 12px', fontSize: '1rem', color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                🛠️ Test & Simulatie Tools
+                                ⚙️ Race Instellingen & Tools
                             </h3>
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
-                                Gebruik deze tools om het verloop van een race-weekend te testen.
+                                Pas de deadline voor deze specifieke race aan of beheer de automatische processen. Spelers kunnen niets meer wijzigen als de huidige tijd de deadline passeert.
                             </p>
+
+                            {/* Custom Deadline Picker */}
+                            <div style={{ marginBottom: 20, padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                                <label style={{ display: 'block', marginBottom: 8, fontSize: '0.85rem', fontWeight: 600 }}>Tijd van de Deadline (Lock-in, Lokale Tijd):</label>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <input
+                                        type="datetime-local"
+                                        className="form-input"
+                                        style={{ flex: 1, minWidth: 200 }}
+                                        value={selectedRaceObj?.lock_datetime ? (() => {
+                                            const d = new Date(selectedRaceObj.lock_datetime);
+                                            // Format as YYYY-MM-DDThh:mm exactly in local time for the input
+                                            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                                            return d.toISOString().slice(0, 16);
+                                        })() : ''}
+                                        onChange={e => {
+                                            // Store the exact local string (e.g. "2024-03-02T15:00") temporarily in state
+                                            setSelectedRaceObj({ ...selectedRaceObj, lock_datetime: e.target.value })
+                                        }}
+                                    />
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={() => saveCustomDeadline(selectedRaceObj?.lock_datetime)}
+                                        disabled={saving}
+                                    >
+                                        💾 Deadline Opslaan
+                                    </button>
+                                </div>
+                            </div>
+
+                            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12, textTransform: 'uppercase' }}>Simulatie & Noodknoppen</h4>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                 {(!selectedRaceObj?.lock_datetime || new Date(selectedRaceObj.lock_datetime) > new Date()) ? (
                                     <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 12px', background: 'rgba(255, 193, 7, 0.1)', borderColor: 'var(--amber)' }}
