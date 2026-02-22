@@ -179,7 +179,7 @@ export default function PlayerOverview() {
                         </div>
                     ) : teamDrivers.length > 0 ? (
                         <>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
                                 {teamDrivers.map((d, i) => {
                                     const pts = getDriverTotalTeamPoints(d.id)
                                     return (

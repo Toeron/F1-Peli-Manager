@@ -128,18 +128,18 @@ export default function Dashboard() {
                         <div className="stat-value">{profile?.total_points || 0}</div>
                         <div className="stat-label">Punten</div>
                     </div>
-                    <div className="stat-card" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wereld</span>
-                            <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>P{globalRank || '—'}</span>
-                        </div>
-                        {leagueRanks.map(lr => (
-                            <div key={lr.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 80 }} title={lr.name}>{lr.name}</span>
-                                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>P{lr.rank}</span>
-                            </div>
-                        ))}
+                    <div className="stat-card">
+                        <div className="stat-value">P{globalRank || '—'}</div>
+                        <div className="stat-label">Wereld</div>
                     </div>
+                    {leagueRanks.map(lr => (
+                        <div key={lr.name} className="stat-card">
+                            <div className="stat-value">P{lr.rank}</div>
+                            <div className="stat-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 4px' }} title={lr.name}>
+                                {lr.name}
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Last race results summary with paging */}
