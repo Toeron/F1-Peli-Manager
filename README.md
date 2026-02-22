@@ -53,15 +53,15 @@ Dit is de ultieme boost! Als een coureur die je **in je Team** hebt gekocht, ó�
 
 ---
 
-## 📈 Dynamisch Budget & Investeren
+## 💰 Budget & Team Selectie
 
-Je startbudget is **$100M**, maar de prijzen van coureurs staan niet stil. F1 Peli-Manager gebruikt een dynamisch marktsysteem:
+Je begint het seizoen met een vast startbudget van **$100M**.
 
-1. Als je een team koopt voor $95M, houd je $5M 'in kas'.
-2. Na elk raceweekend **stijgen** of **dalen** coureurs in waarde op basis van hun prestaties ten opzichte van de verwachting (maximaal ±12% per race). Winnaars worden duurder, verliezers goedkoper.
-3. Jouw nieuwe besteedbare budget voor de volgende race is de *nieuwe actuele waarde van jouw 4 gekozen coureurs* **PLUS** het bedrag dat je nog 'in kas' had. 
+1. De prijzen van coureurs zijn gebaseerd op hun historische prestaties en **blijven het hele seizoen gelijk**.
+2. Als je een team kiest dat minder dan $100M kost, blijft het restant gewoon in je account staan.
+3. Dit overgebleven budget ('in kas') kun je bij volgende races gebruiken om eventueel duurdere coureurs te kiezen, of om wissels op te vangen.
 
-**De Strategie:** Vind de *underrated* pareltjes! Kies goedkope coureurs die boven verwachting presteren. Zij stijgen in waarde, waardoor jouw totale teambudget meegroeit. Aanstaande races kun je door dit grotere budget ineens duurdere kampioenen betalen!
+**💡 Tip:** Je hoeft dus niet elke race je volledige budget op te maken. Slim sparen kan je helpen om later in het seizoen een sterker team op te stellen!
 
 ---
 
