@@ -12,7 +12,6 @@ export default function Dashboard() {
     const [allPastRaces, setAllPastRaces] = useState([])
     const [pastRaceIndex, setPastRaceIndex] = useState(0)
     const [myTeam, setMyTeam] = useState(null)
-    const [leaderboard, setLeaderboard] = useState([])
     const [globalRank, setGlobalRank] = useState(null)
     const [leagueRanks, setLeagueRanks] = useState([])
     const [loading, setLoading] = useState(true)
@@ -64,14 +63,6 @@ export default function Dashboard() {
                 .maybeSingle()
             setMyTeam(team)
         }
-
-        // Top 5 leaderboard
-        const { data: top } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, total_points')
-            .order('total_points', { ascending: false })
-            .limit(5)
-        setLeaderboard(top || [])
 
         // Calculate custom ranks
         if (profile) {
@@ -252,43 +243,6 @@ export default function Dashboard() {
                             {nextRace && <Link to={`/team/${nextRace.id}`} className="btn btn-primary" style={{ marginTop: 12 }}>Team Kiezen</Link>}
                         </div>
                     )}
-                </div>
-
-                {/* Mini Leaderboard */}
-                <div className="card">
-                    <h2>Top 5 — Wereldranglijst</h2>
-                    {leaderboard.length > 0 ? (
-                        <div className="table-container">
-                            <table>
-                                <thead><tr><th>#</th><th>Speler</th><th>Punten</th></tr></thead>
-                                <tbody>
-                                    {leaderboard.map((p, i) => (
-                                        <tr key={i} className={p.username === profile?.username ? 'highlight' : ''}>
-                                            <td style={{ fontWeight: 700 }}>{i + 1}</td>
-                                            <td>
-                                                {allPastRaces.length > 0 ? (
-                                                    <Link to={`/results/${allPastRaces[0].id}/player/${p.id}`} style={{ color: 'inherit', textDecoration: 'none' }} className="hover-opacity">
-                                                        {p.display_name || p.username}
-                                                    </Link>
-                                                ) : (
-                                                    p.display_name || p.username
-                                                )}
-                                            </td>
-                                            <td style={{ fontWeight: 600 }}>{p.total_points}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 16 }}>
-                            Het seizoen is nog niet begonnen — sta jij straks bovenaan?
-                        </p>
-                    )}
-                    <div style={{ textAlign: 'center', marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center' }}>
-                        <Link to="/leagues" className="btn btn-secondary btn-small">Wereldranglijst →</Link>
-                        <Link to="/history" className="btn btn-secondary btn-small">Uitslagen Historie →</Link>
-                    </div>
                 </div>
             </div>
         </div>

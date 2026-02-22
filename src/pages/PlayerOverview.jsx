@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { DriverAvatar } from '../components/DriverAvatar'
 import Flag from '../components/Flag'
+import { getTeamPointsForDriver, getPredictionPoints, getPredictionMatch } from '../utils/scoring'
 
 export default function PlayerOverview() {
     const { raceId, userId } = useParams()
@@ -12,6 +13,7 @@ export default function PlayerOverview() {
     const [race, setRace] = useState(null)
     const [team, setTeam] = useState(null)
     const [predictions, setPredictions] = useState({})
+    const [raceResults, setRaceResults] = useState({})
     const [drivers, setDrivers] = useState([])
     const [loading, setLoading] = useState(true)
     const [adminSight, setAdminSight] = useState(true)
@@ -19,14 +21,15 @@ export default function PlayerOverview() {
     useEffect(() => { if (currentUserProfile) loadData() }, [raceId, userId, currentUserProfile])
 
     async function loadData() {
-        const [raceRes, driverRes, teamRes, predRes, profileRes] = await Promise.all([
+        const [raceRes, driverRes, teamRes, predRes, profileRes, resultsRes] = await Promise.all([
             supabase.from('races').select('*, circuits(*)').eq('id', raceId).single(),
             supabase.from('drivers').select('*, constructors(*)').eq('active', true),
             supabase.from('team_selections')
                 .select('*, driver1:drivers!team_selections_driver1_id_fkey(*, constructors(*)), driver2:drivers!team_selections_driver2_id_fkey(*, constructors(*)), driver3:drivers!team_selections_driver3_id_fkey(*, constructors(*)), driver4:drivers!team_selections_driver4_id_fkey(*, constructors(*))')
                 .eq('user_id', userId).eq('race_id', raceId).maybeSingle(),
             supabase.from('predictions').select('*').eq('user_id', userId).eq('race_id', raceId),
-            supabase.from('profiles').select('*').eq('id', userId).single()
+            supabase.from('profiles').select('*').eq('id', userId).single(),
+            supabase.from('race_results').select('*').eq('race_id', raceId)
         ])
 
         setRace(raceRes.data)
@@ -37,11 +40,54 @@ export default function PlayerOverview() {
         const predMap = {}
         predRes.data?.forEach(p => { predMap[p.session_type] = p })
         setPredictions(predMap)
+
+        const resMap = {}
+        resultsRes.data?.forEach(r => {
+            if (!resMap[r.session_type]) resMap[r.session_type] = []
+            resMap[r.session_type].push(r)
+        })
+        setRaceResults(resMap)
+
         setLoading(false)
     }
 
     function getDriver(id) {
         return drivers.find(d => d.id === id)
+    }
+
+    function getDriverPosition(session, driverId) {
+        if (!raceResults[session]) return null
+        const res = raceResults[session].find(r => r.driver_id === driverId)
+        return res ? res.position : null
+    }
+
+    function getDriverTotalTeamPoints(driverId) {
+        if (!isCompleted || !teamDrivers) return null
+        let total = 0
+        const tDrivers = teamDrivers.map(d => d.id)
+        if (raceResults['qualifying']) {
+            const pos = getDriverPosition('qualifying', driverId)
+            if (pos) total += getTeamPointsForDriver('qualifying', pos, driverId, tDrivers, predictions)
+        }
+        if (raceResults['sprint']) {
+            const pos = getDriverPosition('sprint', driverId)
+            if (pos) total += getTeamPointsForDriver('sprint', pos, driverId, tDrivers, predictions)
+        }
+        if (raceResults['race']) {
+            const pos = getDriverPosition('race', driverId)
+            if (pos) total += getTeamPointsForDriver('race', pos, driverId, tDrivers, predictions)
+        }
+        return total
+    }
+
+    function getPredictionPointsDisplay(session, driverId) {
+        if (!isCompleted || !raceResults[session]) return null
+        const pos = getDriverPosition(session, driverId)
+        if (!pos) return { pts: 0, label: null }
+        return {
+            pts: getPredictionPoints(session, pos, driverId, predictions),
+            match: getPredictionMatch(session, pos, driverId, predictions)
+        }
     }
 
     function formatPrice(val) {
@@ -129,17 +175,27 @@ export default function PlayerOverview() {
                     ) : teamDrivers.length > 0 ? (
                         <>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-                                {teamDrivers.map((d, i) => (
-                                    <div key={i} className="driver-card" style={{ cursor: 'default' }}>
-                                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: d.constructors?.color }} />
-                                        <DriverAvatar abbreviation={d.abbreviation} name={`${d.first_name} ${d.last_name}`} src={d.avatar_url} size={84} />
-                                        <div className="driver-info">
-                                            <div className="driver-name">{d.first_name} {d.last_name}</div>
-                                            <div className="driver-team">{d.constructors?.name}</div>
+                                {teamDrivers.map((d, i) => {
+                                    const pts = getDriverTotalTeamPoints(d.id)
+                                    return (
+                                        <div key={i} className="driver-card" style={{ cursor: 'default', position: 'relative' }}>
+                                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: d.constructors?.color }} />
+                                            <DriverAvatar abbreviation={d.abbreviation} name={`${d.first_name} ${d.last_name}`} src={d.avatar_url} size={84} />
+                                            <div className="driver-info">
+                                                <div className="driver-name">{d.first_name} {d.last_name}</div>
+                                                <div className="driver-team">{d.constructors?.name}</div>
+                                            </div>
+                                            <div className="driver-price" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                                                <div>{formatPrice(d.current_value)}</div>
+                                                {pts !== null && (
+                                                    <div style={{ background: 'var(--green)', color: '#000', padding: '2px 6px', borderRadius: 4, fontSize: '0.7rem', fontWeight: 800 }}>
+                                                        +{pts} PNT
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="driver-price">{formatPrice(d.current_value)}</div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                             <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                 <span>Teamkosten: <strong style={{ color: 'var(--text-primary)' }}>{formatPrice(totalCost)}</strong></span>
@@ -185,17 +241,28 @@ export default function PlayerOverview() {
                                     {pred ? (
                                         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', justifyContent: 'center' }}>
                                             {/* P2 */}
-                                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                            <div style={{ textAlign: 'center', flex: 1, position: 'relative' }}>
                                                 <DriverAvatar abbreviation={p2?.abbreviation} name={p2?.last_name} src={p2?.avatar_url} size={88} />
                                                 <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p2?.last_name}</div>
                                                 <div style={{
                                                     background: 'rgba(192,192,192,0.15)', border: '1px solid rgba(192,192,192,0.3)',
                                                     borderRadius: 6, padding: '4px 0', marginTop: 4, fontSize: '0.75rem', fontWeight: 700
                                                 }}>P2</div>
+                                                {(() => {
+                                                    const res = getPredictionPointsDisplay(sess.key, p2?.id)
+                                                    if (!res) return null
+                                                    return (
+                                                        <div style={{ marginTop: 4 }}>
+                                                            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: res.pts > 0 ? '#00d26a' : 'var(--text-muted)' }}>+{res.pts}</div>
+                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 Exact</div>}
+                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ Bijna</div>}
+                                                        </div>
+                                                    )
+                                                })()}
                                             </div>
 
                                             {/* P1 */}
-                                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                            <div style={{ textAlign: 'center', flex: 1, position: 'relative' }}>
                                                 <DriverAvatar abbreviation={p1?.abbreviation} name={p1?.last_name} src={p1?.avatar_url} size={104} />
                                                 <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 4 }}>{p1?.last_name}</div>
                                                 <div style={{
@@ -203,10 +270,21 @@ export default function PlayerOverview() {
                                                     borderRadius: 6, padding: '6px 0', marginTop: 4, fontSize: '0.8rem', fontWeight: 700,
                                                     color: 'gold'
                                                 }}>🥇 P1</div>
+                                                {(() => {
+                                                    const res = getPredictionPointsDisplay(sess.key, p1?.id)
+                                                    if (!res) return null
+                                                    return (
+                                                        <div style={{ marginTop: 4 }}>
+                                                            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: res.pts > 0 ? '#00d26a' : 'var(--text-muted)' }}>+{res.pts}</div>
+                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 Exact</div>}
+                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ Bijna</div>}
+                                                        </div>
+                                                    )
+                                                })()}
                                             </div>
 
                                             {/* P3 */}
-                                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                            <div style={{ textAlign: 'center', flex: 1, position: 'relative' }}>
                                                 <DriverAvatar abbreviation={p3?.abbreviation} name={p3?.last_name} src={p3?.avatar_url} size={80} />
                                                 <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p3?.last_name}</div>
                                                 <div style={{
@@ -214,6 +292,17 @@ export default function PlayerOverview() {
                                                     borderRadius: 6, padding: '4px 0', marginTop: 4, fontSize: '0.75rem', fontWeight: 700,
                                                     color: '#cd7f32'
                                                 }}>P3</div>
+                                                {(() => {
+                                                    const res = getPredictionPointsDisplay(sess.key, p3?.id)
+                                                    if (!res) return null
+                                                    return (
+                                                        <div style={{ marginTop: 4 }}>
+                                                            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: res.pts > 0 ? '#00d26a' : 'var(--text-muted)' }}>+{res.pts}</div>
+                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 Exact</div>}
+                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ Bijna</div>}
+                                                        </div>
+                                                    )
+                                                })()}
                                             </div>
                                         </div>
                                     ) : (

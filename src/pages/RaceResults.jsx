@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { DriverAvatar } from '../components/DriverAvatar'
 import Flag from '../components/Flag'
+import { getTeamPointsForDriver, getPredictionMatch, getSynergyMultiplier, getPredictionPoints } from '../utils/scoring'
 
 export default function RaceResults() {
     const { raceId } = useParams()
@@ -90,78 +91,12 @@ export default function RaceResults() {
         return [team.driver1_id, team.driver2_id, team.driver3_id, team.driver4_id].includes(driverId)
     }
 
-    function getPredictionPoints(session, position, driverId) {
-        const pred = predictions[session]
-        if (!pred) return 0
-
-        let predPos = null
-        if (pred.p1_driver_id === driverId) predPos = 1
-        else if (pred.p2_driver_id === driverId) predPos = 2
-        else if (pred.p3_driver_id === driverId) predPos = 3
-
-        if (!predPos) return 0
-
-        let base = 0
-        if (session === 'race') {
-            const ptsArr = [25, 18, 15]
-            base = ptsArr[predPos - 1]
-        } else {
-            const ptsArr = [8, 7, 6]
-            base = ptsArr[predPos - 1]
-        }
-
-        const dist = Math.abs(position - predPos)
-        const mult = dist === 0 ? 1.0 : (dist === 1 ? 0.5 : (dist === 2 ? 0.25 : 0))
-        return Math.round(base * mult)
+    function isMyTeamDriver(driverId) {
+        if (!team) return false
+        return [team.driver1_id, team.driver2_id, team.driver3_id, team.driver4_id].includes(driverId)
     }
 
-    function getTeamPointsForDriver(session, position, driverId) {
-        if (!isMyTeamDriver(driverId)) return 0
-
-        let base = 0
-        if (session === 'race') {
-            const ptsArr = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
-            base = position <= 10 ? ptsArr[position - 1] : 0
-        } else if (session === 'qualifying') {
-            base = position <= 8 ? (9 - position) : 0
-        } else if (session === 'sprint') {
-            const ptsArr = [8, 7, 6, 5, 4, 3, 2, 1]
-            base = position <= 8 ? Math.round(ptsArr[position - 1] * 0.25) : 0
-        }
-
-        const multiplier = getSynergyMultiplier(session, position, driverId) || 1.0
-        return Math.round(base * multiplier)
-    }
-
-    function getPredictionMatch(session, position, driverId) {
-        const pred = predictions[session]
-        if (!pred) return null
-        if (position === 1 && pred.p1_driver_id === driverId) return 'exact'
-        if (position === 2 && pred.p2_driver_id === driverId) return 'exact'
-        if (position === 3 && pred.p3_driver_id === driverId) return 'exact'
-        const predDrivers = [pred.p1_driver_id, pred.p2_driver_id, pred.p3_driver_id]
-        if (position <= 3 && predDrivers.includes(driverId)) return 'close'
-        return null
-    }
-
-    function getSynergyMultiplier(session, position, driverId) {
-        if (!isMyTeamDriver(driverId) || position > 3) return null
-        const pred = predictions[activeTab]
-        if (!pred) return null
-
-        let predPos = null
-        if (pred.p1_driver_id === driverId) predPos = 1
-        else if (pred.p2_driver_id === driverId) predPos = 2
-        else if (pred.p3_driver_id === driverId) predPos = 3
-
-        if (!predPos) return null
-
-        const dist = Math.abs(position - predPos)
-        if (dist === 0) return 2.0
-        if (dist === 1) return 1.5
-        if (dist === 2) return 1.25
-        return null
-    }
+    const myTeamDriverIds = team ? [team.driver1_id, team.driver2_id, team.driver3_id, team.driver4_id] : []
 
     function getPredictionLabel(match) {
         if (match === 'exact') return { text: '🎯 Exact!', color: '#00d26a' }
@@ -347,8 +282,8 @@ export default function RaceResults() {
                         <div className="results-grid">
                             <div className="results-podium">
                                 {sessionResults.slice(0, 3).map((r, i) => {
-                                    const match = getPredictionMatch(activeTab, r.position, r.driver_id)
-                                    const matchLabel = getPredictionLabel(match)
+                                    const match = getPredictionMatch(activeTab, r.position, r.driver_id, predictions)
+                                    const matchLabel = match ? getPredictionLabel(match) : null
                                     const isTeam = isMyTeamDriver(r.driver_id)
                                     const podiumColors = ['#FFD700', '#C0C0C0', '#CD7F32']
                                     const podiumHeights = [140, 110, 90]
@@ -366,18 +301,18 @@ export default function RaceResults() {
                                             </div>
                                             <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: '4px 10px', marginTop: 6, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                                                 <div style={{ fontWeight: 800, color: 'var(--green)', fontSize: '1rem' }}>
-                                                    {getTeamPointsForDriver(activeTab, r.position, r.driver_id) + getPredictionPoints(activeTab, r.position, r.driver_id)}
+                                                    {getTeamPointsForDriver(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions) + getPredictionPoints(activeTab, r.position, r.driver_id, predictions)}
                                                     <span style={{ fontSize: '0.6rem', marginLeft: 2, verticalAlign: 'middle', opacity: 0.8 }}>PNT</span>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: 6, fontSize: '0.7rem', opacity: 0.8 }}>
-                                                    {isTeam && <span>🏎️ {getTeamPointsForDriver(activeTab, r.position, r.driver_id)}</span>}
-                                                    {getPredictionPoints(activeTab, r.position, r.driver_id) > 0 && <span>🎯 {getPredictionPoints(activeTab, r.position, r.driver_id)}</span>}
+                                                    {isTeam && <span>🏎️ {getTeamPointsForDriver(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions)}</span>}
+                                                    {getPredictionPoints(activeTab, r.position, r.driver_id, predictions) > 0 && <span>🎯 {getPredictionPoints(activeTab, r.position, r.driver_id, predictions)}</span>}
                                                 </div>
                                             </div>
                                             {matchLabel && <div style={{ fontSize: '0.7rem', color: matchLabel.color, fontWeight: 700, marginTop: 4 }}>{matchLabel.text}</div>}
-                                            {getSynergyMultiplier(activeTab, r.position, r.driver_id) && (
+                                            {getSynergyMultiplier(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions) && (
                                                 <div style={{ fontSize: '0.65rem', background: 'gold', color: '#000', borderRadius: 4, padding: '1px 6px', fontWeight: 800, marginTop: 4 }}>
-                                                    ⚡ SYNERGY {getSynergyMultiplier(activeTab, r.position, r.driver_id)}x
+                                                    ⚡ SYNERGY {getSynergyMultiplier(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions)}x
                                                 </div>
                                             )}
                                             <div style={{
@@ -393,8 +328,8 @@ export default function RaceResults() {
 
                             <div className="results-list" style={{ marginTop: 20 }}>
                                 {sessionResults.slice(3).map(r => {
-                                    const match = getPredictionMatch(activeTab, r.position, r.driver_id)
-                                    const matchLabel = getPredictionLabel(match)
+                                    const match = getPredictionMatch(activeTab, r.position, r.driver_id, predictions)
+                                    const matchLabel = match ? getPredictionLabel(match) : null
                                     const isTeam = isMyTeamDriver(r.driver_id)
 
                                     return (
@@ -414,18 +349,18 @@ export default function RaceResults() {
                                                 </div>
                                             </div>
                                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                                                <div style={{ fontWeight: 800, color: (isTeam || getPredictionPoints(activeTab, r.position, r.driver_id) > 0) ? 'var(--green)' : 'var(--text-muted)', fontSize: '1.1rem', lineHeight: 1 }}>
-                                                    {getTeamPointsForDriver(activeTab, r.position, r.driver_id) + getPredictionPoints(activeTab, r.position, r.driver_id)}
+                                                <div style={{ fontWeight: 800, color: (isTeam || getPredictionPoints(activeTab, r.position, r.driver_id, predictions) > 0) ? 'var(--green)' : 'var(--text-muted)', fontSize: '1.1rem', lineHeight: 1 }}>
+                                                    {getTeamPointsForDriver(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions) + getPredictionPoints(activeTab, r.position, r.driver_id, predictions)}
                                                     <span style={{ fontSize: '0.6rem', marginLeft: 2, fontWeight: 400, opacity: 0.7 }}>PNT</span>
                                                 </div>
                                                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                                                     {isTeam && (
                                                         <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                            🏎️ {getTeamPointsForDriver(activeTab, r.position, r.driver_id)}
-                                                            {getSynergyMultiplier(activeTab, r.position, r.driver_id) && <span style={{ color: 'gold', fontSize: '0.65rem', fontWeight: 800 }}>⚡{getSynergyMultiplier(activeTab, r.position, r.driver_id)}x</span>}
+                                                            🏎️ {getTeamPointsForDriver(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions)}
+                                                            {getSynergyMultiplier(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions) && <span style={{ color: 'gold', fontSize: '0.65rem', fontWeight: 800 }}>⚡{getSynergyMultiplier(activeTab, r.position, r.driver_id, myTeamDriverIds, predictions)}x</span>}
                                                         </span>
                                                     )}
-                                                    {getPredictionPoints(activeTab, r.position, r.driver_id) > 0 && <span style={{ fontSize: '0.75rem', color: '#00d26a', display: 'flex', alignItems: 'center', gap: 2 }}>🎯 {getPredictionPoints(activeTab, r.position, r.driver_id)}</span>}
+                                                    {getPredictionPoints(activeTab, r.position, r.driver_id, predictions) > 0 && <span style={{ fontSize: '0.75rem', color: '#00d26a', display: 'flex', alignItems: 'center', gap: 2 }}>🎯 {getPredictionPoints(activeTab, r.position, r.driver_id, predictions)}</span>}
                                                 </div>
                                                 {matchLabel && <div style={{ fontSize: '0.65rem', color: matchLabel.color, fontWeight: 700, marginTop: 1 }}>{matchLabel.text}</div>}
                                             </div>
