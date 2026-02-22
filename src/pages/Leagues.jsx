@@ -3,9 +3,122 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
+async function calculateTrends(rankingData, lastRaceId) {
+    if (!lastRaceId || !rankingData || rankingData.length === 0) {
+        return rankingData.map((p, i) => ({ ...p, currentRank: i, trend: 'stable', trendDiff: 0 }))
+    }
+
+    const { data: lastScores } = await supabase
+        .from('user_race_scores')
+        .select('user_id, total_points')
+        .eq('race_id', lastRaceId)
+        .in('user_id', rankingData.map(p => p.id))
+
+    const withPrev = rankingData.map((p, i) => {
+        const lastScore = lastScores?.find(s => s.user_id === p.id)?.total_points || 0
+        return { ...p, currentRank: i, previousPoints: p.total_points - lastScore }
+    })
+
+    const sortedPrev = [...withPrev].sort((a, b) => b.previousPoints - a.previousPoints)
+
+    return withPrev.map(p => {
+        const prevRank = sortedPrev.findIndex(sp => sp.id === p.id)
+        let trend = 'stable'
+        if (p.currentRank < prevRank) trend = 'up'
+        if (p.currentRank > prevRank) trend = 'down'
+        return { ...p, trend, trendDiff: Math.abs(prevRank - p.currentRank) }
+    })
+}
+
+function TrendIndicator({ trend, diff }) {
+    if (trend === 'up') return <span style={{ color: 'var(--green)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 2 }} title="Gestegen ten opzichte van vorige race">▲ {diff}</span>
+    if (trend === 'down') return <span style={{ color: 'var(--red)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 2 }} title="Gedaald ten opzichte van vorige race">▼ {diff}</span>
+    return <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', opacity: 0.5 }} title="Gelijk gebleven">-</span>
+}
+
+function CamelTrack({ players }) {
+    if (!players || players.length < 2) return null;
+    const trackPlayers = [...players].slice(0, 5); // top 5 looks best on mobile
+    const maxPoints = trackPlayers[0].total_points;
+    const minPoints = Math.max(0, trackPlayers[trackPlayers.length - 1].total_points - 20); // Give a bit of margin behind the last player
+
+    const range = Math.max(1, maxPoints - minPoints);
+
+    // Group players by exact score to fan them out cleanly
+    const groupedPlayers = trackPlayers.reduce((acc, p) => {
+        if (!acc[p.total_points]) acc[p.total_points] = [];
+        acc[p.total_points].push(p);
+        return acc;
+    }, {});
+
+    return (
+        <div style={{ marginBottom: 32, padding: '0 4px' }}>
+            <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16, letterSpacing: '1px' }}>Koplopers (Top 5) & Puntenverschil</h3>
+            <div style={{ position: 'relative', width: '100%', height: 90, background: 'linear-gradient(90deg, rgba(255,255,255,0.01) 0%, rgba(255,255,255,0.04) 100%)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
+                {/* Finish line */}
+                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, background: 'repeating-linear-gradient(45deg, #fff, #fff 4px, #000 4px, #000 8px)', borderTopRightRadius: 11, borderBottomRightRadius: 11, opacity: 0.6 }} />
+
+                {Object.values(groupedPlayers).map(group => {
+                    return group.map((p, groupIndex) => {
+                        // Find global index for medal colors
+                        const globalIndex = trackPlayers.findIndex(tp => tp.id === p.id);
+                        const percentage = Math.max(0, Math.min(100, ((p.total_points - minPoints) / range) * 100));
+
+                        // If there are multiple people here, fan them out slightly
+                        // groupIndex 0 => center, groupIndex 1 => slightly up-left, groupIndex 2 => slightly down-right, etc.
+                        const fanOffsets = [
+                            { x: 0, y: 0 },
+                            { x: -10, y: -15 },
+                            { x: 10, y: 15 },
+                            { x: -20, y: -30 },
+                            { x: 20, y: 30 }
+                        ];
+                        const offset = fanOffsets[groupIndex % 5];
+
+                        return (
+                            <div key={p.id} style={{
+                                position: 'absolute',
+                                left: `calc(30px + (100% - 60px) * ${percentage / 100} + ${offset.x}px)`,
+                                top: `calc(50% + ${offset.y}px)`,
+                                transform: 'translate(-50%, -50%)',
+                                transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                zIndex: 10 - groupIndex, // primary stays on top
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center'
+                            }}>
+                                <div className="nav-avatar" style={{
+                                    width: 44, height: 44, border: `3px solid ${globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)'}`,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                    overflow: 'hidden',
+                                    background: 'var(--bg-elevated)',
+                                    fontSize: '1.2rem',
+                                    padding: 0
+                                }}>
+                                    {p.avatar_url ? (
+                                        <img src={p.avatar_url} alt="Av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        (p.display_name || p.username || '?')[0].toUpperCase()
+                                    )}
+                                </div>
+                                {/* Only show the score badge for the first person in the group to avoid label overlap */}
+                                {groupIndex === 0 && (
+                                    <div style={{ position: 'absolute', top: -16, right: -16, fontSize: '0.75rem', fontWeight: 800, background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 8, whiteSpace: 'nowrap', border: '2px solid', borderColor: globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)', color: globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--text-primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.4)', zIndex: 20 }}>
+                                        {p.total_points}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })
+                })}
+            </div>
+        </div>
+    )
+}
+
 export default function Leagues() {
     const { profile } = useAuth()
-    const [tab, setTab] = useState('global')
+    const [tab, setTab] = useState('leagues')
     const [globalRanking, setGlobalRanking] = useState([])
     const [myLeagues, setMyLeagues] = useState([])
     const [showCreate, setShowCreate] = useState(false)
@@ -22,16 +135,8 @@ export default function Leagues() {
     useEffect(() => { loadData() }, [profile])
 
     async function loadData() {
-        // Global ranking
-        const { data: ranking } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, total_points, budget, avatar_url')
-            .order('total_points', { ascending: false })
-            .limit(50)
-        setGlobalRanking(ranking || [])
-
-        // Get last locked race for linking
         const now = new Date().toISOString()
+        let fetchedLastRaceId = null
         const { data: pastRaces } = await supabase
             .from('races')
             .select('id')
@@ -40,8 +145,19 @@ export default function Leagues() {
             .order('lock_datetime', { ascending: false })
             .limit(1)
         if (pastRaces?.length) {
-            setLastRaceId(pastRaces[0].id)
+            fetchedLastRaceId = pastRaces[0].id
+            setLastRaceId(fetchedLastRaceId)
         }
+
+        // Global ranking
+        const { data: ranking } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, total_points, budget, avatar_url')
+            .order('total_points', { ascending: false })
+            .limit(50)
+
+        const rankingWithTrends = await calculateTrends(ranking || [], fetchedLastRaceId)
+        setGlobalRanking(rankingWithTrends)
 
         // My leagues
         if (profile) {
@@ -53,6 +169,8 @@ export default function Leagues() {
             setMyLeagues(leaguesList)
             if (leaguesList.length > 0 && !selectedLeagueId) {
                 setSelectedLeagueId(leaguesList[0].id)
+            } else if (leaguesList.length === 0) {
+                setTab('global')
             }
         }
         setLoading(false)
@@ -70,7 +188,8 @@ export default function Leagues() {
                 .eq('league_members.league_id', selectedLeagueId)
                 .order('total_points', { ascending: false })
 
-            setLeagueRanking(data || [])
+            const rankingWithTrends = await calculateTrends(data || [], lastRaceId)
+            setLeagueRanking(rankingWithTrends)
         }
         fetchLeagueRanking()
     }, [selectedLeagueId])
@@ -178,13 +297,16 @@ export default function Leagues() {
                         <div className="table-container">
                             <table>
                                 <thead>
-                                    <tr><th>#</th><th>Speler</th><th>Punten</th></tr>
+                                    <tr><th style={{ width: 40 }}>#</th><th style={{ width: 60 }}>Trend</th><th>Speler</th><th>Punten</th></tr>
                                 </thead>
                                 <tbody>
                                     {globalRanking.map((p, i) => (
                                         <tr key={p.id} className={p.id === profile?.id ? 'highlight' : ''}>
                                             <td style={{ fontWeight: 700, color: i < 3 ? ['var(--gold)', 'var(--silver)', 'var(--bronze)'][i] : 'inherit' }}>
                                                 {i + 1}
+                                            </td>
+                                            <td>
+                                                <TrendIndicator trend={p.trend} diff={p.trendDiff} />
                                             </td>
                                             <td>
                                                 {lastRaceId ? (
@@ -227,6 +349,8 @@ export default function Leagues() {
 
                 {tab === 'leagues' && (
                     <div className="card">
+                        <CamelTrack players={myLeagues.length > 0 ? leagueRanking : globalRanking} />
+
                         <div style={{ marginBottom: 16 }}>
                             {myLeagues.length > 0 ? (
                                 <select
@@ -248,13 +372,16 @@ export default function Leagues() {
                             <div className="table-container">
                                 <table>
                                     <thead>
-                                        <tr><th>#</th><th>Speler</th><th>Punten</th></tr>
+                                        <tr><th style={{ width: 40 }}>#</th><th style={{ width: 60 }}>Trend</th><th>Speler</th><th>Punten</th></tr>
                                     </thead>
                                     <tbody>
                                         {leagueRanking.map((p, i) => (
                                             <tr key={p.id} className={p.id === profile?.id ? 'highlight' : ''}>
                                                 <td style={{ fontWeight: 700, color: i < 3 ? ['var(--gold)', 'var(--silver)', 'var(--bronze)'][i] : 'inherit' }}>
                                                     {i + 1}
+                                                </td>
+                                                <td>
+                                                    <TrendIndicator trend={p.trend} diff={p.trendDiff} />
                                                 </td>
                                                 <td>
                                                     {lastRaceId ? (
