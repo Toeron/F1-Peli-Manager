@@ -100,16 +100,13 @@ export default function ScoringRules() {
                     <section style={{ marginBottom: 32 }}>
                         <h2 style={{ fontSize: '1.2rem', marginBottom: 16 }}>💰 4. Budget & Team Selectie</h2>
                         <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: 12 }}>
-                            Je begint het seizoen met een vast startbudget van <strong>$100M</strong>.
+                            Je krijgt <strong>elke race</strong> een vast budget van <strong>$100M</strong> om je team samen te stellen.
                         </p>
                         <ul style={{ fontSize: '0.9rem', opacity: 0.8, paddingLeft: 20, marginBottom: 16 }}>
-                            <li style={{ marginBottom: 6 }}>De prijzen van coureurs zijn gebaseerd op hun historische prestaties en blijven het hele seizoen gelijk.</li>
-                            <li style={{ marginBottom: 6 }}>Als je een team kiest dat minder dan $100M kost, blijft het restant gewoon in je account staan.</li>
-                            <li>Dit overgebleven budget kun je bij volgende races gebruiken om eventueel duurdere coureurs te kiezen.</li>
+                            <li style={{ marginBottom: 6 }}>De prijzen van coureurs staan vast en blijven het hele seizoen gelijk.</li>
+                            <li style={{ marginBottom: 6 }}>Je moet 4 coureurs kiezen waarvan de totale waarde maximaal $100M is.</li>
+                            <li>Geld dat je overhoudt neem je <strong>niet</strong> mee naar de volgende race. Je begint elk volgend raceweekend gewoon weer opnieuw met $100M.</li>
                         </ul>
-                        <p style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 8 }}>
-                            💡 <strong>Tip:</strong> Je hoeft dus niet elke race je volledige budget op te maken. Slim sparen kan je helpen om later in het seizoen een sterker team op te stellen!
-                        </p>
                     </section>
 
                     <section>

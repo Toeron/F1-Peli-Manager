@@ -10,7 +10,7 @@ export default function RaceResults() {
     const { raceId } = useParams()
     const { profile } = useAuth()
     const [race, setRace] = useState(null)
-    const [results, setResults] = useState({ qualifying: [], sprint: [], race: [] })
+    const [results, setResults] = useState({ qualifying: [], sprint_qualifying: [], sprint: [], race: [] })
     const [predictions, setPredictions] = useState({})
     const [team, setTeam] = useState(null)
     const [scores, setScores] = useState(null)
@@ -60,7 +60,7 @@ export default function RaceResults() {
         setDrivers(driverRes.data || [])
 
         // Group results by session
-        const grouped = { qualifying: [], sprint: [], race: [] }
+        const grouped = { qualifying: [], sprint_qualifying: [], sprint: [], race: [] }
         resultRes.data?.forEach(r => { if (grouped[r.session_type]) grouped[r.session_type].push(r) })
         setResults(grouped)
 
@@ -78,8 +78,13 @@ export default function RaceResults() {
             .filter(l => l && !l.is_global) || []
         setMyLeagues(leaguesList)
 
-        // Default to leaderboard if there is any data in it (allows live standings during weekend)
-        if (leaderRes.data?.length > 0) {
+        // Parse possible tab query param
+        const queryParams = new URLSearchParams(window.location.search)
+        const tabParam = queryParams.get('tab')
+
+        if (tabParam) {
+            setActiveTab(tabParam)
+        } else if (leaderRes.data?.length > 0) {
             setActiveTab('leaderboard')
         }
 
@@ -109,8 +114,13 @@ export default function RaceResults() {
     if (loading) return <div className="loading"><div className="spinner"></div></div>
 
     const sessionResults = results[activeTab] || []
-    const sessionLabels = { qualifying: '🏁 Kwalificatie', sprint: '⚡ Sprint', race: '🏆 Hoofdrace', leaderboard: '📊 Ranglijst' }
-    const sessions = ['qualifying', ...(race?.is_sprint_weekend ? ['sprint'] : []), 'race', 'leaderboard']
+    const sessionLabels = { sprint_qualifying: '🏁 Kwalificatie Sprint', sprint: '⚡ Sprintrace', qualifying: '🏁 Kwalificatie Hoofdrace', race: '🏆 Hoofdrace', leaderboard: '📊 Ranglijst' }
+    const sessions = [
+        ...(race?.is_sprint_weekend ? ['sprint_qualifying', 'sprint'] : []),
+        'qualifying',
+        'race',
+        'leaderboard'
+    ]
     const breakdown = scores?.breakdown || {}
 
     const filteredLeaderboard = selectedLeagueId === 'global' || !leagueMembers
@@ -143,22 +153,30 @@ export default function RaceResults() {
                             <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--green)', marginBottom: 12 }}>
                                 {scores.total_points} <span style={{ fontSize: '1rem', fontWeight: 400, color: 'var(--text-secondary)' }}>punten</span>
                             </div>
-                            <div className="stats-row" style={{ gap: 6 }}>
-                                <div className="stat-card" style={{ padding: '8px 12px', flex: 1 }}>
+                            <div className="stats-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                                {race?.is_sprint_weekend && (
+                                    <>
+                                        <div className="stat-card" style={{ padding: '8px 12px', flex: '1 1 40%' }}>
+                                            <div className="stat-value" style={{ fontSize: '1.2rem', color: 'var(--green)' }}>
+                                                {(breakdown.team_sprint_qualifying || 0) + (breakdown.pred_sprint_qualifying || 0)}
+                                            </div>
+                                            <div className="stat-label" style={{ fontSize: '0.7rem' }}>Kwalificatie Sprint</div>
+                                        </div>
+                                        <div className="stat-card" style={{ padding: '8px 12px', flex: '1 1 40%' }}>
+                                            <div className="stat-value" style={{ fontSize: '1.2rem', color: 'var(--green)' }}>
+                                                {(breakdown.team_sprint || 0) + (breakdown.pred_sprint || 0)}
+                                            </div>
+                                            <div className="stat-label" style={{ fontSize: '0.7rem' }}>Sprintrace</div>
+                                        </div>
+                                    </>
+                                )}
+                                <div className="stat-card" style={{ padding: '8px 12px', flex: '1 1 40%' }}>
                                     <div className="stat-value" style={{ fontSize: '1.2rem', color: 'var(--green)' }}>
                                         {(breakdown.team_qualifying || 0) + (breakdown.pred_qualifying || 0)}
                                     </div>
-                                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Kwalificatie</div>
+                                    <div className="stat-label" style={{ fontSize: '0.7rem' }}>Kwali Hoofdrace</div>
                                 </div>
-                                {race?.is_sprint_weekend && (
-                                    <div className="stat-card" style={{ padding: '8px 12px', flex: 1 }}>
-                                        <div className="stat-value" style={{ fontSize: '1.2rem', color: 'var(--green)' }}>
-                                            {(breakdown.team_sprint || 0) + (breakdown.pred_sprint || 0)}
-                                        </div>
-                                        <div className="stat-label" style={{ fontSize: '0.7rem' }}>Sprint</div>
-                                    </div>
-                                )}
-                                <div className="stat-card" style={{ padding: '8px 12px', flex: 1 }}>
+                                <div className="stat-card" style={{ padding: '8px 12px', flex: '1 1 40%' }}>
                                     <div className="stat-value" style={{ fontSize: '1.2rem', color: 'var(--green)' }}>
                                         {(breakdown.team_race || 0) + (breakdown.pred_race || 0)}
                                     </div>

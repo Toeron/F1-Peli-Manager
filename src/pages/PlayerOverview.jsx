@@ -69,6 +69,10 @@ export default function PlayerOverview() {
             const pos = getDriverPosition('qualifying', driverId)
             if (pos) total += getTeamPointsForDriver('qualifying', pos, driverId, tDrivers, predictions)
         }
+        if (raceResults['sprint_qualifying']) {
+            const pos = getDriverPosition('sprint_qualifying', driverId)
+            if (pos) total += getTeamPointsForDriver('sprint_qualifying', pos, driverId, tDrivers, predictions)
+        }
         if (raceResults['sprint']) {
             const pos = getDriverPosition('sprint', driverId)
             if (pos) total += getTeamPointsForDriver('sprint', pos, driverId, tDrivers, predictions)
@@ -99,8 +103,9 @@ export default function PlayerOverview() {
     if (loading) return <div className="loading"><div className="spinner"></div></div>
 
     const sessions = [
-        { key: 'qualifying', label: '🏁 Kwalificatie', icon: '🏁' },
-        ...(race?.is_sprint_weekend ? [{ key: 'sprint', label: '⚡ Sprint', icon: '⚡' }] : []),
+        ...(race?.is_sprint_weekend ? [{ key: 'sprint_qualifying', label: '🏁 Kwalificatie Sprint', icon: '🏁' }] : []),
+        ...(race?.is_sprint_weekend ? [{ key: 'sprint', label: '⚡ Sprintrace', icon: '⚡' }] : []),
+        { key: 'qualifying', label: '🏁 Kwalificatie Hoofdrace', icon: '🏁' },
         { key: 'race', label: '🏆 Hoofdrace', icon: '🏆' },
     ]
 

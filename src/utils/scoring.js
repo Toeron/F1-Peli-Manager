@@ -7,7 +7,7 @@ export function getTeamPointsForDriver(session, position, driverId, myTeamDriver
     if (session === 'race') {
         const ptsArr = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
         base = position <= 10 ? ptsArr[position - 1] : 0
-    } else if (session === 'qualifying') {
+    } else if (session === 'qualifying' || session === 'sprint_qualifying') {
         base = position <= 8 ? (9 - position) : 0
     } else if (session === 'sprint') {
         const ptsArr = [8, 7, 6, 5, 4, 3, 2, 1]
@@ -67,7 +67,7 @@ export function getPredictionPoints(session, position, driverId, activePredictio
     } else if (session === 'sprint') {
         const ptsArr = [5, 3, 1]
         base = ptsArr[predPos - 1]
-    } else if (session === 'qualifying') {
+    } else if (session === 'qualifying' || session === 'sprint_qualifying') {
         const ptsArr = [10, 6, 3]
         base = ptsArr[predPos - 1]
     }

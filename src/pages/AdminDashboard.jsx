@@ -96,7 +96,7 @@ export default function AdminDashboard() {
         const racePoints = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
         const sprintPoints = [8, 7, 6, 5, 4, 3, 2, 1]
         if (session === 'sprint') return position <= 8 ? sprintPoints[position - 1] : 0
-        if (session === 'qualifying') return position <= 8 ? (9 - position) : 0
+        if (session === 'qualifying' || session === 'sprint_qualifying') return position <= 8 ? (9 - position) : 0
         return position <= 10 ? racePoints[position - 1] : 0
     }
 
@@ -437,8 +437,9 @@ export default function AdminDashboard() {
                             <div className="form-group">
                                 <label>Sessie</label>
                                 <select className="form-input" value={selectedSession} onChange={e => setSelectedSession(e.target.value)}>
-                                    <option value="qualifying">Kwalificatie</option>
-                                    {selectedRaceObj?.is_sprint_weekend && <option value="sprint">Sprint</option>}
+                                    {selectedRaceObj?.is_sprint_weekend && <option value="sprint_qualifying">Kwalificatie Sprint</option>}
+                                    {selectedRaceObj?.is_sprint_weekend && <option value="sprint">Sprintrace</option>}
+                                    <option value="qualifying">Kwalificatie Hoofdrace</option>
                                     <option value="race">Hoofdrace</option>
                                 </select>
                             </div>

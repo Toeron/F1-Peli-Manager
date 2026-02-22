@@ -145,8 +145,8 @@ export default function Dashboard() {
                 {/* Last race results summary with paging */}
                 {allPastRaces.length > 0 && (
                     <div className="card" style={{ marginBottom: 24, borderLeft: '4px solid var(--green)', position: 'relative' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '1 1 250px' }}>
                                 {allPastRaces.length > 1 && (
                                     <button
                                         onClick={() => setPastRaceIndex(prev => Math.min(prev + 1, allPastRaces.length - 1))}
@@ -166,14 +166,22 @@ export default function Dashboard() {
                                     </h3>
                                 </div>
                             </div>
-                            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 16 }}>
+
+                            {/* Quick link middle */}
+                            <div style={{ flex: '1 1 150px', display: 'flex', justifyContent: 'center' }}>
+                                <Link to={`/results/${allPastRaces[pastRaceIndex].id}?tab=race`} className="btn btn-secondary btn-small" style={{ borderRadius: 20, padding: '6px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>
+                                    🏁 Uitslag Race
+                                </Link>
+                            </div>
+
+                            <div style={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16 }}>
                                 <div>
                                     <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--green)' }}>
                                         {allPastRaces[pastRaceIndex].myScore?.total_points || 0}
                                         <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>PNT</span>
                                     </div>
                                     <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4 }}>
-                                        <Link to={`/results/${allPastRaces[pastRaceIndex].id}`} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Volledige uitslag →</Link>
+                                        <Link to={`/results/${allPastRaces[pastRaceIndex].id}?tab=leaderboard`} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Tussenstand →</Link>
                                         <Link to={`/results/${allPastRaces[pastRaceIndex].id}/player/${profile?.id}`} style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 700 }}>Mijn details →</Link>
                                     </div>
                                 </div>

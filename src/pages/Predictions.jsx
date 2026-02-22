@@ -9,8 +9,8 @@ export default function Predictions() {
     const { profile } = useAuth()
     const [race, setRace] = useState(null)
     const [drivers, setDrivers] = useState([])
-    const [session, setSession] = useState('qualifying') // qualifying, sprint, race
-    const [preds, setPreds] = useState({ qualifying: {}, sprint: {}, race: {} })
+    const [session, setSession] = useState('qualifying') // qualifying, sprint_qualifying, sprint, race
+    const [preds, setPreds] = useState({ qualifying: {}, sprint_qualifying: {}, sprint: {}, race: {} })
     const [existingPreds, setExistingPreds] = useState({})
     const [pickerPos, setPickerPos] = useState(null)
     const [saving, setSaving] = useState(false)
@@ -92,7 +92,9 @@ export default function Predictions() {
         setSaved(false)
 
         const sessions = ['qualifying', 'race']
-        if (race?.is_sprint_weekend) sessions.splice(1, 0, 'sprint')
+        if (race?.is_sprint_weekend) {
+            sessions.splice(0, 1, 'sprint_qualifying', 'sprint', 'qualifying')
+        }
 
         for (const sess of sessions) {
             if (!sessionComplete(sess)) continue
@@ -129,12 +131,13 @@ export default function Predictions() {
     if (loading) return <div className="loading"><div className="spinner"></div></div>
 
     const locked = isLocked()
-    const sessions = ['qualifying']
-    if (race?.is_sprint_weekend) sessions.push('sprint')
-    sessions.push('race')
+    let sessions = ['qualifying', 'race']
+    if (race?.is_sprint_weekend) {
+        sessions = ['sprint_qualifying', 'sprint', 'qualifying', 'race']
+    }
 
-    const sessionLabels = { qualifying: '🏁 Kwalificatie', sprint: '⚡ Sprint', race: '🏆 Hoofdrace' }
-    const sessionPoints = { qualifying: '10% van racepunten', sprint: '25% van racepunten', race: 'Volledige WK-punten' }
+    const sessionLabels = { sprint_qualifying: '🏁 Kwalificatie Sprint', sprint: '⚡ Sprint', qualifying: '🏁 Kwalificatie Hoofdrace', race: '🏆 Hoofdrace' }
+    const sessionPoints = { sprint_qualifying: '10% van racepunten', sprint: '25% van racepunten', qualifying: '10% van racepunten', race: 'Volledige WK-punten' }
 
     return (
         <div className="page">
