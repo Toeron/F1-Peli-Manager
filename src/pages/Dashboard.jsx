@@ -9,9 +9,12 @@ import Flag from '../components/Flag'
 export default function Dashboard() {
     const { profile } = useAuth()
     const [nextRace, setNextRace] = useState(null)
-    const [lastRace, setLastRace] = useState(null)
+    const [allPastRaces, setAllPastRaces] = useState([])
+    const [pastRaceIndex, setPastRaceIndex] = useState(0)
     const [myTeam, setMyTeam] = useState(null)
     const [leaderboard, setLeaderboard] = useState([])
+    const [globalRank, setGlobalRank] = useState(null)
+    const [leagueRanks, setLeagueRanks] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => { loadData() }, [profile])
@@ -28,23 +31,27 @@ export default function Dashboard() {
 
         if (races?.length) setNextRace(races[0])
 
-        // Get last completed race with results
-        const { data: pastRaces } = await supabase
+        // Get last completed races with results
+        const { data: past } = await supabase
             .from('races')
             .select('*, circuits(*)')
             .eq('status', 'completed')
             .order('race_date', { ascending: false })
-            .limit(1)
+            .limit(10)
 
-        if (pastRaces?.length) {
-            const { data: lastScore } = await supabase
+        if (past?.length) {
+            // Fetch scores for all fetched past races for this user
+            const { data: scores } = await supabase
                 .from('user_race_scores')
                 .select('*')
-                .eq('race_id', pastRaces[0].id)
+                .in('race_id', past.map(r => r.id))
                 .eq('user_id', profile?.id)
-                .maybeSingle()
 
-            setLastRace({ ...pastRaces[0], myScore: lastScore })
+            const pastWithScores = past.map(r => ({
+                ...r,
+                myScore: scores?.find(s => s.race_id === r.id)
+            }))
+            setAllPastRaces(pastWithScores)
         }
 
         // Get my team for next race
@@ -61,10 +68,42 @@ export default function Dashboard() {
         // Top 5 leaderboard
         const { data: top } = await supabase
             .from('profiles')
-            .select('username, display_name, total_points')
+            .select('id, username, display_name, total_points')
             .order('total_points', { ascending: false })
             .limit(5)
         setLeaderboard(top || [])
+
+        // Calculate custom ranks
+        if (profile) {
+            const { count: higherGlobal } = await supabase
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .gt('total_points', profile.total_points || 0)
+            setGlobalRank((higherGlobal || 0) + 1)
+
+            const { data: myLeaguesData } = await supabase
+                .from('league_members')
+                .select('league_id, leagues(name, is_global)')
+                .eq('user_id', profile.id)
+
+            const myCustomLeagues = myLeaguesData?.filter(m => m.leagues && !m.leagues.is_global) || []
+            let lRanks = []
+            for (const member of myCustomLeagues) {
+                const { count: higherInLeague } = await supabase
+                    .from('profiles')
+                    .select('id, league_members!inner(league_id)', { count: 'exact', head: true })
+                    .eq('league_members.league_id', member.league_id)
+                    .gt('total_points', profile.total_points || 0)
+
+                lRanks.push({
+                    name: member.leagues.name,
+                    rank: (higherInLeague || 0) + 1
+                })
+            }
+            // Sort by rank ascending
+            lRanks.sort((a, b) => a.rank - b.rank)
+            setLeagueRanks(lRanks)
+        }
 
         setLoading(false)
     }
@@ -98,28 +137,65 @@ export default function Dashboard() {
                         <div className="stat-value">{profile?.total_points || 0}</div>
                         <div className="stat-label">Punten</div>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-value">—</div>
-                        <div className="stat-label">Ranglijst</div>
+                    <div className="stat-card" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Wereld</span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>P{globalRank || '—'}</span>
+                        </div>
+                        {leagueRanks.map(lr => (
+                            <div key={lr.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 80 }} title={lr.name}>{lr.name}</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>P{lr.rank}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* Last race results summary */}
-                {lastRace && (
-                    <div className="card" style={{ marginBottom: 24, borderLeft: '4px solid var(--green)' }}>
+                {/* Last race results summary with paging */}
+                {allPastRaces.length > 0 && (
+                    <div className="card" style={{ marginBottom: 24, borderLeft: '4px solid var(--green)', position: 'relative' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                                <h2 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 4 }}>Laatste Race Resultaat</h2>
-                                <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Flag code={lastRace.circuits?.country_code} /> {lastRace.name}
-                                </h3>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--green)' }}>
-                                    {lastRace.myScore?.total_points || 0}
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>PNT</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                {allPastRaces.length > 1 && (
+                                    <button
+                                        onClick={() => setPastRaceIndex(prev => Math.min(prev + 1, allPastRaces.length - 1))}
+                                        disabled={pastRaceIndex === allPastRaces.length - 1}
+                                        className="btn-icon"
+                                        style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: pastRaceIndex === allPastRaces.length - 1 ? 'default' : 'pointer', opacity: pastRaceIndex === allPastRaces.length - 1 ? 0.3 : 1 }}
+                                    >
+                                        ◀
+                                    </button>
+                                )}
+                                <div>
+                                    <h2 style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        {pastRaceIndex === 0 ? 'Laatste Race Resultaat' : `Eerdere Race (${pastRaceIndex + 1}/${allPastRaces.length})`}
+                                    </h2>
+                                    <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <Flag code={allPastRaces[pastRaceIndex].circuits?.country_code} /> {allPastRaces[pastRaceIndex].name}
+                                    </h3>
                                 </div>
-                                <Link to={`/results/${lastRace.id}`} style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 600 }}>Bekijk details →</Link>
+                            </div>
+                            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--green)' }}>
+                                        {allPastRaces[pastRaceIndex].myScore?.total_points || 0}
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>PNT</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4 }}>
+                                        <Link to={`/results/${allPastRaces[pastRaceIndex].id}`} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Volledige uitslag →</Link>
+                                        <Link to={`/results/${allPastRaces[pastRaceIndex].id}/player/${profile?.id}`} style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 700 }}>Mijn details →</Link>
+                                    </div>
+                                </div>
+                                {allPastRaces.length > 1 && (
+                                    <button
+                                        onClick={() => setPastRaceIndex(prev => Math.max(prev - 1, 0))}
+                                        disabled={pastRaceIndex === 0}
+                                        className="btn-icon"
+                                        style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: pastRaceIndex === 0 ? 'default' : 'pointer', opacity: pastRaceIndex === 0 ? 0.3 : 1 }}
+                                    >
+                                        ▶
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -155,7 +231,11 @@ export default function Dashboard() {
                 <div className="card" style={{ marginBottom: 24 }}>
                     <h2>Mijn Team {nextRace ? `— ${nextRace.name}` : ''}</h2>
                     {myTeam ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+                        <div className="driver-grid-display" style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                            gap: 12
+                        }}>
                             {[myTeam.driver1, myTeam.driver2, myTeam.driver3, myTeam.driver4].map((d, i) => d && (
                                 <div key={i} className="driver-card" style={{ cursor: 'default' }}>
                                     <DriverAvatar abbreviation={d.abbreviation} name={`${d.first_name} ${d.last_name}`} src={d.avatar_url} size={80} />
@@ -186,8 +266,8 @@ export default function Dashboard() {
                                         <tr key={i} className={p.username === profile?.username ? 'highlight' : ''}>
                                             <td style={{ fontWeight: 700 }}>{i + 1}</td>
                                             <td>
-                                                {lastRace ? (
-                                                    <Link to={`/results/${lastRace.id}/player/${p.id}`} style={{ color: 'inherit', textDecoration: 'none' }} className="hover-opacity">
+                                                {allPastRaces.length > 0 ? (
+                                                    <Link to={`/results/${allPastRaces[0].id}/player/${p.id}`} style={{ color: 'inherit', textDecoration: 'none' }} className="hover-opacity">
                                                         {p.display_name || p.username}
                                                     </Link>
                                                 ) : (

@@ -8,7 +8,6 @@ export default function LoginPage() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [username, setUsername] = useState('')
-    const [displayName, setDisplayName] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState('')
@@ -24,7 +23,7 @@ export default function LoginPage() {
         if (isSignUp) {
             if (!username.trim()) { setError('Kies een gebruikersnaam'); setLoading(false); return }
             if (password.length < 6) { setError('Wachtwoord moet minimaal 6 tekens zijn'); setLoading(false); return }
-            const { error: err } = await signUp(email, password, username, displayName || username)
+            const { error: err } = await signUp(email, password, username)
             if (err) {
                 if (err.message.includes('rate limit')) {
                     setError('Te veel pogingen. Probeer het over een paar minuten opnieuw.')
@@ -59,18 +58,11 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit}>
                     {isSignUp && (
-                        <>
-                            <div className="form-group">
-                                <label>Gebruikersnaam</label>
-                                <input className="form-input" type="text" value={username}
-                                    onChange={e => setUsername(e.target.value)} placeholder="RacingKing2026" required />
-                            </div>
-                            <div className="form-group">
-                                <label>Weergavenaam</label>
-                                <input className="form-input" type="text" value={displayName}
-                                    onChange={e => setDisplayName(e.target.value)} placeholder="Max Verstappen" />
-                            </div>
-                        </>
+                        <div className="form-group">
+                            <label>Gebruikersnaam</label>
+                            <input className="form-input" type="text" value={username}
+                                onChange={e => setUsername(e.target.value)} placeholder="RacingKing2026" required />
+                        </div>
                     )}
                     <div className="form-group">
                         <label>E-mail</label>
@@ -95,6 +87,6 @@ export default function LoginPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

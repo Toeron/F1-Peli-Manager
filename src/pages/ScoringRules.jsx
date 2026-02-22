@@ -75,18 +75,18 @@ export default function ScoringRules() {
                     <section style={{ marginBottom: 32 }}>
                         <h2 style={{ fontSize: '1.2rem', marginBottom: 16 }}>⚡ 3. Synergy Bonus</h2>
                         <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: 12 }}>
-                            Dit is de ultieme boost! Als een coureur die je in je **Team** hebt voor komt in je **Voorspelling**, worden de resultaat-punten van die coureur vermenigvuldigd:
+                            Dit is de ultieme boost! Als een coureur die je in je **Team** hebt voorkomt in je **Voorspelling**, worden de resultaat-punten van die coureur vermenigvuldigd:
                         </p>
-                        <div className="stats-row" style={{ gap: 8 }}>
-                            <div className="stat-card" style={{ flex: 1, padding: 10 }}>
+                        <div className="stats-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                            <div className="stat-card" style={{ flex: '1 1 100px', padding: 10, minWidth: '80px' }}>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>2.0x</div>
                                 <div style={{ fontSize: '0.65rem' }}>Exacte Match</div>
                             </div>
-                            <div className="stat-card" style={{ flex: 1, padding: 10 }}>
+                            <div className="stat-card" style={{ flex: '1 1 100px', padding: 10, minWidth: '80px' }}>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>1.5x</div>
                                 <div style={{ fontSize: '0.65rem' }}>1 plek ernaast</div>
                             </div>
-                            <div className="stat-card" style={{ flex: 1, padding: 10 }}>
+                            <div className="stat-card" style={{ flex: '1 1 100px', padding: 10, minWidth: '80px' }}>
                                 <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>1.25x</div>
                                 <div style={{ fontSize: '0.65rem' }}>2 plekken ernaast</div>
                             </div>
@@ -98,17 +98,17 @@ export default function ScoringRules() {
                     </section>
 
                     <section style={{ marginBottom: 32 }}>
-                        <h2 style={{ fontSize: '1.2rem', marginBottom: 16 }}>📈 4. Dynamisch Budget</h2>
+                        <h2 style={{ fontSize: '1.2rem', marginBottom: 16 }}>💰 4. Budget & Team Selectie</h2>
                         <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: 12 }}>
-                            Je begint het seizoen met een startbudget van <strong>$100M</strong>. Het budgetsysteem werkt als een investering:
+                            Je begint het seizoen met een vast startbudget van <strong>$100M</strong>.
                         </p>
                         <ul style={{ fontSize: '0.9rem', opacity: 0.8, paddingLeft: 20, marginBottom: 16 }}>
-                            <li style={{ marginBottom: 6 }}>Als je een team kiest van $95M, houd je $5M 'in kas'.</li>
-                            <li style={{ marginBottom: 6 }}>Na de race worden de prijzen van coureurs dynamisch aangepast. Winnaars worden duurder, verliezers goedkoper (max ±12% per race).</li>
-                            <li><strong>Jouw nieuwe totale budget voor de volgende race wordt:</strong> de nieuwe, aangepaste waarde van jouw 4 gekozen coureurs PLUS het bedrag dat je nog 'in kas' had.</li>
+                            <li style={{ marginBottom: 6 }}>De prijzen van coureurs zijn gebaseerd op hun historische prestaties en blijven het hele seizoen gelijk.</li>
+                            <li style={{ marginBottom: 6 }}>Als je een team kiest dat minder dan $100M kost, blijft het restant gewoon in je account staan.</li>
+                            <li>Dit overgebleven budget kun je bij volgende races gebruiken om eventueel duurdere coureurs te kiezen.</li>
                         </ul>
                         <p style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 8 }}>
-                            💡 <strong>Strategie:</strong> Kies slimme, goedkope coureurs die boven verwachting presteren. Zij stijgen in waarde, waardoor jouw teambudget meegroeit en je later in het seizoen duurdere topcoureurs kunt betalen!
+                            💡 <strong>Tip:</strong> Je hoeft dus niet elke race je volledige budget op te maken. Slim sparen kan je helpen om later in het seizoen een sterker team op te stellen!
                         </p>
                     </section>
 

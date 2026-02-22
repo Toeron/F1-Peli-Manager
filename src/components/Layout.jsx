@@ -46,6 +46,10 @@ export default function Layout() {
                     <li><NavLink to="/calendar"><span className="icon">📅</span><span>Kalender</span></NavLink></li>
                     <li><NavLink to="/history"><span className="icon">🕒</span><span>Historie</span></NavLink></li>
                     <li><NavLink to="/leagues"><span className="icon">🏆</span><span>Klassement</span></NavLink></li>
+                    <li><NavLink to="/rules"><span className="icon">📚</span><span>Regels</span></NavLink></li>
+                    {profile?.is_admin && (
+                        <li><NavLink to="/admin"><span className="icon">⚙️</span><span>Admin</span></NavLink></li>
+                    )}
                     <li><NavLink to="/profile">
                         <div className="nav-avatar" style={{ width: 40, height: 40, fontSize: '1.2rem', overflow: 'hidden' }}>
                             {profile?.avatar_url ? (

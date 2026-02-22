@@ -128,10 +128,12 @@ export default function TeamSelection() {
     return (
         <div className="page">
             <div className="container">
-                <div className="page-header">
-                    <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Terug</Link>
-                    <h1 style={{ marginTop: 8 }}>Team Kiezen</h1>
-                    {race && <p>{race.name} — Ronde {race.round}</p>}
+                <div className="page-header banner-team">
+                    <div className="page-header-content">
+                        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Terug</Link>
+                        <h1 style={{ marginTop: 8 }}>Team Kiezen</h1>
+                        {race && <p>{race.name} — Ronde {race.round}</p>}
+                    </div>
                 </div>
 
                 {locked && (
@@ -140,21 +142,25 @@ export default function TeamSelection() {
                     </div>
                 )}
 
-                {/* Budget & selection info */}
-                <div className="stats-row" style={{ marginBottom: 16 }}>
-                    <div className="stat-card">
-                        <div className="stat-value" style={{ color: canAfford() ? 'var(--green)' : 'var(--red)' }}>
-                            {formatPrice(profile?.budget)}
+                {/* Sticky Budget & selection info */}
+                <div className="sticky-stats">
+                    <div className="stats-row" style={{ marginBottom: 0 }}>
+                        <div className="stat-card">
+                            <div className="stat-value" style={{ color: 'var(--green)' }}>
+                                {formatPrice(Number(profile?.budget || 0) - totalCost())}
+                            </div>
+                            <div className="stat-label">Resterend</div>
                         </div>
-                        <div className="stat-label">Budget</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{formatPrice(totalCost())}</div>
-                        <div className="stat-label">Kosten</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{selected.length}/4</div>
-                        <div className="stat-label">Gekozen</div>
+                        <div className="stat-card">
+                            <div className="stat-value" style={{ color: canAfford() ? 'var(--text-primary)' : 'var(--red)' }}>
+                                {formatPrice(totalCost())}
+                            </div>
+                            <div className="stat-label">Kosten</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{selected.length}/4</div>
+                            <div className="stat-label">Gekozen</div>
+                        </div>
                     </div>
                 </div>
 
@@ -166,21 +172,25 @@ export default function TeamSelection() {
                         const isSelected = selected.includes(d.id)
                         const constructorUsed = !isSelected && usedConstructors().includes(d.constructor_id)
                         const teamFull = !isSelected && selected.length >= 4
-                        const disabled = constructorUsed || teamFull || locked
+                        const tooExpensive = !isSelected && (totalCost() + Number(d.current_value) > Number(profile?.budget || 0))
+                        const disabled = constructorUsed || teamFull || tooExpensive || locked
 
                         return (
                             <div key={d.id}
-                                className={`driver-card ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`}
+                                className={`driver-card ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''} ${tooExpensive ? 'insufficient-budget' : ''}`}
                                 style={{ '--team-color': d.constructors?.color || '#444' }}
                                 onClick={() => !disabled && toggleDriver(d.id)}>
                                 <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: d.constructors?.color }} />
                                 <DriverAvatar abbreviation={d.abbreviation} name={`${d.first_name} ${d.last_name}`} src={d.avatar_url} size={80} />
                                 <div className="driver-info">
                                     <div className="driver-name">{d.first_name} {d.last_name}</div>
-                                    <div className="driver-team">{d.constructors?.short_name} #{d.number}</div>
+                                    <div className="driver-team">{d.constructors?.name} #{d.number}</div>
                                 </div>
-                                <div className="driver-price">{formatPrice(d.current_value)}</div>
+                                <div className="driver-price" style={{ color: tooExpensive && !isSelected ? 'var(--red)' : '' }}>
+                                    {formatPrice(d.current_value)}
+                                </div>
                                 {isSelected && <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓</span>}
+                                {tooExpensive && !isSelected && <span style={{ fontSize: '0.65rem', color: 'var(--red)', fontWeight: 600 }}>Geen budget</span>}
                             </div>
                         )
                     })}
@@ -189,7 +199,7 @@ export default function TeamSelection() {
                 {!locked && (
                     <button className="btn btn-primary btn-large" onClick={saveTeam}
                         disabled={selected.length !== 4 || !canAfford() || saving}>
-                        {saving ? 'Opslaan...' : '🏁 Team Bevestigen & Doorgaan naar Voorspellingen'}
+                        {saving ? 'Opslaan...' : '🏁 Team Bevestigen'}
                     </button>
                 )}
             </div>

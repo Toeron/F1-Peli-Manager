@@ -39,11 +39,11 @@ export function AuthProvider({ children }) {
         setLoading(false)
     }
 
-    async function signUp(email, password, username, displayName) {
+    async function signUp(email, password, username) {
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { username, display_name: displayName || username } }
+            options: { data: { username, display_name: username } }
         })
         return { data, error }
     }

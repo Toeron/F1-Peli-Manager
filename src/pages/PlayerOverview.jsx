@@ -14,6 +14,7 @@ export default function PlayerOverview() {
     const [predictions, setPredictions] = useState({})
     const [drivers, setDrivers] = useState([])
     const [loading, setLoading] = useState(true)
+    const [adminSight, setAdminSight] = useState(true)
 
     useEffect(() => { if (currentUserProfile) loadData() }, [raceId, userId, currentUserProfile])
 
@@ -60,18 +61,55 @@ export default function PlayerOverview() {
     const teamDrivers = team ? [team.driver1, team.driver2, team.driver3, team.driver4].filter(Boolean) : []
     const totalCost = teamDrivers.reduce((s, d) => s + Number(d.current_value), 0)
 
+    function isLocked() {
+        if (!race?.lock_datetime) return false
+        return new Date(race.lock_datetime) <= new Date()
+    }
+
+    const isOwner = currentUserProfile?.id === userId
+    const isAdmin = currentUserProfile?.is_admin
+    const locked = isLocked()
+    const isCompleted = race?.status === 'completed'
+
+    // Admin can toggle their "sight" for simulation
+    const effectiveAdminSight = isAdmin && adminSight
+    const canSeeDetails = isOwner || effectiveAdminSight || locked || isCompleted
+
     return (
         <div className="page">
             <div className="container" style={{ maxWidth: 800 }}>
                 {/* Header */}
                 <div className="page-header">
-                    <Link to={`/results/${raceId}`} style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Terug naar Uitslag</Link>
-                    <h1 style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <Flag code={race?.circuits?.country_code} size={36} /> {race?.name}
-                    </h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>
-                        Overzicht van {playerProfile?.display_name || playerProfile?.username}
-                    </p>
+                    <div className="page-header-content">
+                        <Link to={`/results/${raceId}`} style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Terug naar Uitslag</Link>
+                        <h1 style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                            <Flag code={race?.circuits?.country_code} size={36} /> {race?.name}
+                            {isAdmin && !isOwner && (
+                                <button
+                                    onClick={() => setAdminSight(!adminSight)}
+                                    style={{
+                                        fontSize: '0.7rem',
+                                        background: adminSight ? 'var(--amber)' : 'var(--text-muted)',
+                                        color: '#000',
+                                        padding: '4px 10px',
+                                        borderRadius: 6,
+                                        fontWeight: 800,
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 5,
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                    }}
+                                >
+                                    {adminSight ? '👁️ ADMIN ZICHT AAN' : '👓 BEKIJK ALS SPELER'}
+                                </button>
+                            )}
+                        </h1>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                            Overzicht van {playerProfile?.display_name || playerProfile?.username}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Team Section */}
@@ -80,7 +118,15 @@ export default function PlayerOverview() {
                         <h2 style={{ margin: 0 }}>🏎️ Gekozen Team</h2>
                     </div>
 
-                    {teamDrivers.length > 0 ? (
+                    {!canSeeDetails ? (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px dashed var(--border)' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔒</div>
+                            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>Team is nog geheim</h3>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                Je kunt het team van deze speler pas bekijken nadat de race is vergrendeld.
+                            </p>
+                        </div>
+                    ) : teamDrivers.length > 0 ? (
                         <>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
                                 {teamDrivers.map((d, i) => (
@@ -97,13 +143,13 @@ export default function PlayerOverview() {
                             </div>
                             <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                 <span>Teamkosten: <strong style={{ color: 'var(--text-primary)' }}>{formatPrice(totalCost)}</strong></span>
-                                <span>Budget: <strong style={{ color: 'var(--green)' }}>{formatPrice(profile?.budget)}</strong></span>
+                                <span>Budget: <strong style={{ color: 'var(--green)' }}>{formatPrice(playerProfile?.budget)}</strong></span>
                             </div>
                         </>
                     ) : (
                         <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
                             <p>Nog geen team gekozen</p>
-                            <Link to={`/team/${raceId}`} className="btn btn-primary" style={{ marginTop: 8 }}>Team Kiezen</Link>
+                            {isOwner && <Link to={`/team/${raceId}`} className="btn btn-primary" style={{ marginTop: 8 }}>Team Kiezen</Link>}
                         </div>
                     )}
                 </div>
@@ -112,63 +158,73 @@ export default function PlayerOverview() {
                 <div className="card" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <h2 style={{ margin: 0 }}>🎯 Voorspellingen</h2>
-                        <Link to={`/predictions/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>
+                        {isOwner && <Link to={`/predictions/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>}
                     </div>
 
-                    {sessions.map(sess => {
-                        const pred = predictions[sess.key]
-                        const p1 = pred ? getDriver(pred.p1_driver_id) : null
-                        const p2 = pred ? getDriver(pred.p2_driver_id) : null
-                        const p3 = pred ? getDriver(pred.p3_driver_id) : null
+                    {!canSeeDetails ? (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: 12, border: '1px dashed var(--border)' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: 12 }}>🕵️</div>
+                            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem' }}>Nog even geduld...</h3>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                De voorspellingen worden onthuld zodra de deadline is verstreken.
+                            </p>
+                        </div>
+                    ) : (
+                        sessions.map(sess => {
+                            const pred = predictions[sess.key]
+                            const p1 = pred ? getDriver(pred.p1_driver_id) : null
+                            const p2 = pred ? getDriver(pred.p2_driver_id) : null
+                            const p3 = pred ? getDriver(pred.p3_driver_id) : null
 
-                        return (
-                            <div key={sess.key} style={{ marginBottom: 16 }}>
-                                <h3 style={{ fontSize: '0.95rem', marginBottom: 8, color: 'var(--text-secondary)' }}>
-                                    {sess.label}
-                                </h3>
+                            return (
+                                <div key={sess.key} style={{ marginBottom: 16 }}>
+                                    <h3 style={{ fontSize: '0.95rem', marginBottom: 8, color: 'var(--text-secondary)' }}>
+                                        {sess.label}
+                                    </h3>
 
-                                {pred ? (
-                                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', justifyContent: 'center' }}>
-                                        {/* P2 */}
-                                        <div style={{ textAlign: 'center', flex: 1 }}>
-                                            <DriverAvatar abbreviation={p2?.abbreviation} name={p2?.last_name} src={p2?.avatar_url} size={88} />
-                                            <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p2?.last_name}</div>
-                                            <div style={{
-                                                background: 'rgba(192,192,192,0.15)', border: '1px solid rgba(192,192,192,0.3)',
-                                                borderRadius: 6, padding: '4px 0', marginTop: 4, fontSize: '0.75rem', fontWeight: 700
-                                            }}>P2</div>
+                                    {pred ? (
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', justifyContent: 'center' }}>
+                                            {/* P2 */}
+                                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                                <DriverAvatar abbreviation={p2?.abbreviation} name={p2?.last_name} src={p2?.avatar_url} size={88} />
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p2?.last_name}</div>
+                                                <div style={{
+                                                    background: 'rgba(192,192,192,0.15)', border: '1px solid rgba(192,192,192,0.3)',
+                                                    borderRadius: 6, padding: '4px 0', marginTop: 4, fontSize: '0.75rem', fontWeight: 700
+                                                }}>P2</div>
+                                            </div>
+
+                                            {/* P1 */}
+                                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                                <DriverAvatar abbreviation={p1?.abbreviation} name={p1?.last_name} src={p1?.avatar_url} size={104} />
+                                                <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 4 }}>{p1?.last_name}</div>
+                                                <div style={{
+                                                    background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.3)',
+                                                    borderRadius: 6, padding: '6px 0', marginTop: 4, fontSize: '0.8rem', fontWeight: 700,
+                                                    color: 'gold'
+                                                }}>🥇 P1</div>
+                                            </div>
+
+                                            {/* P3 */}
+                                            <div style={{ textAlign: 'center', flex: 1 }}>
+                                                <DriverAvatar abbreviation={p3?.abbreviation} name={p3?.last_name} src={p3?.avatar_url} size={80} />
+                                                <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p3?.last_name}</div>
+                                                <div style={{
+                                                    background: 'rgba(205,127,50,0.15)', border: '1px solid rgba(205,127,50,0.3)',
+                                                    borderRadius: 6, padding: '4px 0', marginTop: 4, fontSize: '0.75rem', fontWeight: 700,
+                                                    color: '#cd7f32'
+                                                }}>P3</div>
+                                            </div>
                                         </div>
-
-                                        {/* P1 */}
-                                        <div style={{ textAlign: 'center', flex: 1 }}>
-                                            <DriverAvatar abbreviation={p1?.abbreviation} name={p1?.last_name} src={p1?.avatar_url} size={104} />
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 4 }}>{p1?.last_name}</div>
-                                            <div style={{
-                                                background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.3)',
-                                                borderRadius: 6, padding: '6px 0', marginTop: 4, fontSize: '0.8rem', fontWeight: 700,
-                                                color: 'gold'
-                                            }}>🥇 P1</div>
+                                    ) : (
+                                        <div style={{ textAlign: 'center', padding: 16, color: 'var(--text-muted)', background: 'var(--bg-input)', borderRadius: 8 }}>
+                                            Nog geen voorspelling
                                         </div>
-
-                                        {/* P3 */}
-                                        <div style={{ textAlign: 'center', flex: 1 }}>
-                                            <DriverAvatar abbreviation={p3?.abbreviation} name={p3?.last_name} src={p3?.avatar_url} size={80} />
-                                            <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p3?.last_name}</div>
-                                            <div style={{
-                                                background: 'rgba(205,127,50,0.15)', border: '1px solid rgba(205,127,50,0.3)',
-                                                borderRadius: 6, padding: '4px 0', marginTop: 4, fontSize: '0.75rem', fontWeight: 700,
-                                                color: '#cd7f32'
-                                            }}>P3</div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div style={{ textAlign: 'center', padding: 16, color: 'var(--text-muted)', background: 'var(--bg-input)', borderRadius: 8 }}>
-                                        Nog geen voorspelling
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })}
+                                    )}
+                                </div>
+                            )
+                        })
+                    )}
                 </div>
 
                 {/* Status bar */}

@@ -407,6 +407,7 @@ select {
 .driver-name {
   font-weight: 600;
   font-size: 0.95rem;
+  line-height: 1.2;
 }
 
 .driver-team {
@@ -589,6 +590,37 @@ tr.highlight td {
   }
 }
 
+/* STICKY STATS BAR */
+.sticky-stats {
+  position: sticky;
+  top: 64px;
+  z-index: 10;
+  background: var(--bg-primary);
+  padding: 12px 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+  .sticky-stats {
+    top: 56px;
+    padding: 8px 0;
+  }
+}
+
+.driver-card.insufficient-budget {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+
+.driver-card.insufficient-budget:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 /* ====== PAGE SECTIONS ====== */
 .page {
   padding: 24px 0;
@@ -605,6 +637,12 @@ tr.highlight td {
   min-height: 140px;
 }
 
+@media (max-width: 480px) {
+  .page-header {
+    min-height: 100px;
+  }
+}
+
 .page-header::before {
   content: '';
   position: absolute;
@@ -615,7 +653,7 @@ tr.highlight td {
   background-size: cover;
   background-position: center;
   z-index: 1;
-  opacity: 0.4;
+  opacity: 0.7;
   pointer-events: none;
 }
 
@@ -626,29 +664,49 @@ tr.highlight td {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to right, rgba(10, 10, 10, 0.95) 15%, rgba(10, 10, 10, 0.4) 100%);
+  background: linear-gradient(to right, rgba(10, 10, 10, 0.7) 15%, rgba(10, 10, 10, 0.2) 100%);
   z-index: 2;
   pointer-events: none;
 }
 
 .page-header.banner-dashboard::before {
   background-image: url('/images/banner_dashboard.png');
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .page-header.banner-leagues::before {
   background-image: url('/images/banner_leagues.png');
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .page-header.banner-calendar::before {
   background-image: url('/images/banner_calendar.png');
-  opacity: 0.5;
+  opacity: 0.8;
 }
 
 .page-header.banner-history::before {
   background-image: url('/images/banner_history.png');
-  opacity: 0.5;
+  opacity: 0.8;
+}
+
+.page-header.banner-team::before {
+  background: linear-gradient(135deg, #444 0%, #666 100%);
+  opacity: 0.9;
+}
+
+.page-header.banner-profile::before {
+  background: linear-gradient(135deg, #555 0%, #777 100%);
+  opacity: 0.8;
+}
+
+.page-header.banner-predictions::before {
+  background: linear-gradient(135deg, #333 0%, #555 100%);
+  opacity: 0.8;
+}
+
+.page-header.banner-admin::before {
+  background: linear-gradient(135deg, #222 0%, #444 100%);
+  opacity: 0.8;
 }
 
 .page-header-content {
@@ -663,12 +721,22 @@ tr.highlight td {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
+  word-break: break-word;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 480px) {
+  .page-header h1 {
+    font-size: 1.4rem;
+  }
 }
 
 .page-header p {
-  color: #d0d0d0;
+  color: #ffffff;
   margin-top: 6px;
   font-size: 1.05rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  font-weight: 500;
 }
 
 .grid-2 {
@@ -830,6 +898,38 @@ tr.highlight td {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .race-card {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .race-round {
+    min-width: 28px;
+    font-size: 0.7rem;
+  }
+
+  .race-flag {
+    min-width: 24px;
+    font-size: 1.2rem;
+  }
+
+  .race-name {
+    font-size: 0.85rem;
+  }
+
+  .race-date {
+    font-size: 0.75rem;
+  }
+
+  .race-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
 }
 
 /* ====== LOADING ====== */
@@ -881,9 +981,9 @@ tr.highlight td {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   color: var(--text-muted);
-  padding: 4px 8px;
+  padding: 4px;
 }
 
 .bottom-nav-items a.active {
@@ -891,7 +991,26 @@ tr.highlight td {
 }
 
 .bottom-nav-items a .icon {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 420px) {
+  .bottom-nav-items a {
+    font-size: 0.5rem;
+    padding: 2px 1px;
+  }
+
+  .bottom-nav-items a .icon {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+
+  th,
+  td {
+    padding: 10px 8px;
+  }
 }
 
 @media (max-width: 768px) {

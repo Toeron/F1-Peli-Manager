@@ -139,10 +139,12 @@ export default function Predictions() {
     return (
         <div className="page">
             <div className="container">
-                <div className="page-header">
-                    <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Terug</Link>
-                    <h1 style={{ marginTop: 8 }}>Voorspellingen</h1>
-                    {race && <p>{race.name} — Ronde {race.round}</p>}
+                <div className="page-header banner-predictions">
+                    <div className="page-header-content">
+                        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Terug</Link>
+                        <h1 style={{ marginTop: 8 }}>Voorspellingen</h1>
+                        {race && <p>{race.name} — Ronde {race.round}</p>}
+                    </div>
                 </div>
 
                 {locked && (

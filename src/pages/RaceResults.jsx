@@ -77,8 +77,8 @@ export default function RaceResults() {
             .filter(l => l && !l.is_global) || []
         setMyLeagues(leaguesList)
 
-        // Default to leaderboard if race is completed and leaderboard has data
-        if (raceData?.status === 'completed' && leaderRes.data?.length > 0) {
+        // Default to leaderboard if there is any data in it (allows live standings during weekend)
+        if (leaderRes.data?.length > 0) {
             setActiveTab('leaderboard')
         }
 
@@ -230,6 +230,11 @@ export default function RaceResults() {
                                     <div className="stat-label" style={{ fontSize: '0.7rem' }}>Hoofdrace</div>
                                 </div>
                             </div>
+                            <div style={{ marginTop: 16 }}>
+                                <Link to={`/results/${raceId}/player/${profile?.id}`} className="btn btn-secondary btn-small" style={{ width: '100%', borderColor: 'var(--green)', color: 'var(--green)', background: 'rgba(0, 210, 106, 0.05)' }}>
+                                    🏎️ Bekijk mijn team & voorspellingen
+                                </Link>
+                            </div>
                         </>
                     ) : (
                         <div style={{ padding: 20 }}>
@@ -257,7 +262,7 @@ export default function RaceResults() {
                     <div className="card">
                         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>🏆 Weekend Ranglijst</h2>
+                                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>🏆 {race?.status === 'completed' ? 'Weekend Eindstand' : 'Live Tussenstand'}</h2>
                                 {myLeagues.length > 0 && (
                                     <select
                                         value={selectedLeagueId}
@@ -395,7 +400,7 @@ export default function RaceResults() {
                                     return (
                                         <div key={r.id} className={`results-row ${isTeam ? 'results-row-team' : ''}`}>
                                             <div className="results-pos" style={{ fontWeight: 800, width: 36, textAlign: 'center', fontSize: '0.9rem' }}>
-                                                {r.is_dnf ? 'DNF' : `P${r.position}`}
+                                                {`P${r.position}`}
                                             </div>
                                             <DriverAvatar abbreviation={r.drivers?.abbreviation} name={r.drivers?.last_name} src={r.drivers?.avatar_url} size={72} />
                                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -423,7 +428,6 @@ export default function RaceResults() {
                                                     {getPredictionPoints(activeTab, r.position, r.driver_id) > 0 && <span style={{ fontSize: '0.75rem', color: '#00d26a', display: 'flex', alignItems: 'center', gap: 2 }}>🎯 {getPredictionPoints(activeTab, r.position, r.driver_id)}</span>}
                                                 </div>
                                                 {matchLabel && <div style={{ fontSize: '0.65rem', color: matchLabel.color, fontWeight: 700, marginTop: 1 }}>{matchLabel.text}</div>}
-                                                {r.is_fastest_lap && <div style={{ fontSize: '0.65rem', color: '#a855f7' }}>⏱️ Snelste ronde</div>}
                                             </div>
                                         </div>
                                     )

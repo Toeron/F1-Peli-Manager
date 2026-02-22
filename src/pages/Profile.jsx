@@ -75,8 +75,10 @@ export default function Profile() {
     return (
         <div className="page">
             <div className="container" style={{ maxWidth: 600 }}>
-                <div className="page-header">
-                    <h1>Profiel</h1>
+                <div className="page-header banner-profile">
+                    <div className="page-header-content">
+                        <h1>Profiel</h1>
+                    </div>
                 </div>
 
                 <div className="card" style={{ marginBottom: 16 }}>

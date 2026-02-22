@@ -81,7 +81,11 @@ export default function RaceOverview() {
 
                     {teamDrivers.length > 0 ? (
                         <>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                                gap: 10
+                            }}>
                                 {teamDrivers.map((d, i) => (
                                     <div key={i} className="driver-card" style={{ cursor: 'default' }}>
                                         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: d.constructors?.color }} />
@@ -89,8 +93,8 @@ export default function RaceOverview() {
                                         <div className="driver-info">
                                             <div className="driver-name">{d.first_name} {d.last_name}</div>
                                             <div className="driver-team">{d.constructors?.name}</div>
+                                            <div className="driver-price" style={{ marginTop: 4 }}>{formatPrice(d.current_value)}</div>
                                         </div>
-                                        <div className="driver-price">{formatPrice(d.current_value)}</div>
                                     </div>
                                 ))}
                             </div>

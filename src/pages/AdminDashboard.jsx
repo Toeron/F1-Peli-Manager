@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import { Navigate } from 'react-router-dom'
 
 export default function AdminDashboard() {
-    const { profile } = useAuth()
+    const { profile, fetchProfile } = useAuth()
     const [races, setRaces] = useState([])
     const [drivers, setDrivers] = useState([])
     const [constructors, setConstructors] = useState([])
     const [players, setPlayers] = useState([])
     const [selectedRace, setSelectedRace] = useState('')
+    const [selectedRaceObj, setSelectedRaceObj] = useState(null)
     const [selectedSession, setSelectedSession] = useState('qualifying')
     const [results, setResults] = useState([])
     const [tab, setTab] = useState('results')
@@ -43,8 +44,11 @@ export default function AdminDashboard() {
     }
 
     useEffect(() => {
-        if (selectedRace && selectedSession) loadResults()
-    }, [selectedRace, selectedSession])
+        if (selectedRace) {
+            loadResults()
+            setSelectedRaceObj(races.find(r => r.id === selectedRace))
+        }
+    }, [selectedRace, selectedSession, races])
 
     async function loadResults() {
         const { data } = await supabase
@@ -62,7 +66,7 @@ export default function AdminDashboard() {
 
     // Build empty result rows for all 20 positions
     function getPositionRows() {
-        const maxPos = selectedSession === 'sprint' ? 8 : 20
+        const maxPos = selectedSession === 'race' ? 10 : 8
         const rows = []
         for (let i = 1; i <= maxPos; i++) {
             const existing = results.find(r => r.position === i)
@@ -70,8 +74,6 @@ export default function AdminDashboard() {
                 position: i,
                 driver_id: existing?.driver_id || '',
                 points_awarded: existing?.points_awarded || 0,
-                is_dnf: existing?.is_dnf || false,
-                is_fastest_lap: existing?.is_fastest_lap || false,
                 id: existing?.id || null
             })
         }
@@ -94,7 +96,7 @@ export default function AdminDashboard() {
         const racePoints = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]
         const sprintPoints = [8, 7, 6, 5, 4, 3, 2, 1]
         if (session === 'sprint') return position <= 8 ? sprintPoints[position - 1] : 0
-        if (session === 'qualifying') return 0
+        if (session === 'qualifying') return position <= 8 ? (9 - position) : 0
         return position <= 10 ? racePoints[position - 1] : 0
     }
 
@@ -124,8 +126,6 @@ export default function AdminDashboard() {
                 driver_id: r.driver_id,
                 position: r.position,
                 points_awarded: r.points_awarded,
-                is_dnf: r.is_dnf,
-                is_fastest_lap: r.is_fastest_lap,
                 verified: true
             }))
 
@@ -134,6 +134,8 @@ export default function AdminDashboard() {
             addLog(`❌ Fout: ${error.message}`)
         } else {
             addLog(`✅ ${rowsToInsert.length} resultaten opgeslagen voor ${selectedSession}`)
+            // Automatically trigger points calculation for all players
+            await calculatePoints()
         }
         await loadResults()
         setSaving(false)
@@ -190,26 +192,37 @@ export default function AdminDashboard() {
             addLog(`❌ Fout: ${error.message}`)
         } else {
             addLog(`✅ ${data}`)
+            if (profile) await fetchProfile(profile.id)
         }
-
-        // Mark race as completed
-        await supabase.from('races').update({ status: 'completed' }).eq('id', selectedRace)
-        addLog('✅ Race status → completed')
 
         setSaving(false)
     }
 
-    async function updatePrices() {
+    async function completeWeekend() {
+        if (!window.confirm('Weet je het zeker? Dit berekent de definitieve scores voor alle spelers en markeert de race als voltooid.')) return
         setSaving(true)
-        addLog('💰 Coureurprijzen bijwerken...')
+        addLog('🏁 Weekend aan het voltooien...')
 
-        const { data, error } = await supabase.rpc('update_driver_prices', { p_race_id: selectedRace })
-        if (error) {
-            addLog(`❌ Fout: ${error.message}`)
-        } else {
-            addLog(`✅ ${data}`)
+        // First calculate points to ensure everyone has their scores
+        addLog('🔄 Laatste check: punten berekenen...')
+        const { data: calcData, error: calcError } = await supabase.rpc('apply_race_scores', { p_race_id: selectedRace })
+        if (calcError) {
+            addLog(`❌ Fout bij punten berekenen: ${calcError.message}`)
+            setSaving(false)
+            return
         }
-        await loadData()
+        addLog(`✅ ${calcData}`)
+
+        // Then mark as completed
+        const { error } = await supabase.from('races').update({ status: 'completed' }).eq('id', selectedRace)
+        if (error) {
+            addLog(`❌ Fout bij status bijwerken: ${error.message}`)
+        } else {
+            addLog('✅ Race status → completed. Weekend is officieel gesloten.')
+            if (profile) await fetchProfile(profile.id)
+            await loadData()
+            window.alert('🏁 Weekend succesvol voltooid en alle scores zijn berekend!')
+        }
         setSaving(false)
     }
 
@@ -226,6 +239,74 @@ export default function AdminDashboard() {
             addLog(`✅ Coureur ${driverId.split('-')[0]}... bijgewerkt`)
             await loadData()
         }
+        setSaving(false)
+    }
+
+    // ============= TEST TOOLS =============
+    async function resetRaceData() {
+        if (!window.confirm('⚠️ WEET JE HET ZEKER? Dit wist ALLE uitslagen en berekende punten voor deze race!')) return
+        setSaving(true)
+        addLog(`🧹 Data wissen voor race ${selectedRace}...`)
+
+        const tableRes = await Promise.all([
+            supabase.from('race_results').delete().eq('race_id', selectedRace),
+            supabase.from('user_race_scores').delete().eq('race_id', selectedRace)
+        ])
+
+        const errors = tableRes.filter(r => r.error)
+        if (errors.length) {
+            addLog(`❌ Fout bij wissen: ${errors[0].error.message}`)
+        } else {
+            addLog('✅ Alles gewist. Je kunt nu een nieuwe simulatie starten.')
+            await supabase.from('races').update({ status: 'open' }).eq('id', selectedRace)
+        }
+        await loadResults()
+        await loadData()
+        setSaving(false)
+    }
+
+    async function lockRaceNow() {
+        setSaving(true)
+        const now = new Date().toISOString()
+        addLog(`🔒 Race handmatig vergrendelen op ${now}...`)
+        const { error } = await supabase.from('races').update({ lock_datetime: now }).eq('id', selectedRace)
+        if (error) addLog(`❌ Fout: ${error.message}`)
+        else addLog('✅ Race vergrendeld. Spelers kunnen geen wijzigingen meer maken en kunnen elkaars data zien.')
+        await loadData()
+        setSaving(false)
+    }
+
+    async function openRaceNow() {
+        setSaving(true)
+        addLog('🔓 Race tijdelijk openzetten voor simulatie...')
+        // Set lock date to 1 week in future to ensure it stays open during testing
+        const nextWeek = new Date()
+        nextWeek.setDate(nextWeek.getDate() + 7)
+        const { error } = await supabase.from('races').update({
+            lock_datetime: nextWeek.toISOString(),
+            status: 'open'
+        }).eq('id', selectedRace)
+
+        if (error) addLog(`❌ Fout: ${error.message}`)
+        else addLog('✅ Race is weer open. Spelers kunnen weer invullen en data van anderen is weer verborgen.')
+        await loadData()
+        setSaving(false)
+    }
+
+    async function restoreDeadline() {
+        if (!selectedRaceObj?.quali_datetime) {
+            addLog('⚠️ Geen kwalificatie-deadline gevonden voor deze race.')
+            return
+        }
+        setSaving(true)
+        addLog('📅 Deadline herstellen naar kalender...')
+        const { error } = await supabase.from('races')
+            .update({ lock_datetime: selectedRaceObj.quali_datetime })
+            .eq('id', selectedRace)
+
+        if (error) addLog(`❌ Fout: ${error.message}`)
+        else addLog(`✅ Deadline hersteld naar ${new Date(selectedRaceObj.quali_datetime).toLocaleString()}`)
+        await loadData()
         setSaving(false)
     }
 
@@ -258,7 +339,6 @@ export default function AdminDashboard() {
         return '$' + (Number(val) / 1000000).toFixed(1) + 'M'
     }
 
-    const selectedRaceObj = races.find(r => r.id === selectedRace)
 
     const [showAddForm, setShowAddForm] = useState(false)
     const [newDriver, setNewDriver] = useState({
@@ -298,23 +378,25 @@ export default function AdminDashboard() {
     return (
         <div className="page">
             <div className="container">
-                <div className="page-header">
-                    <h1>⚙️ Admin Dashboard</h1>
+                <div className="page-header banner-admin">
+                    <div className="page-header-content">
+                        <h1>⚙️ Admin Dashboard</h1>
+                    </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="session-tabs" style={{ marginBottom: 16 }}>
+                <div className="session-tabs" style={{ marginBottom: 16, overflowX: 'auto', whiteSpace: 'nowrap' }}>
                     <button className={`session-tab ${tab === 'results' ? 'active' : ''}`} onClick={() => setTab('results')}>
-                        🏁 Uitslagen Invoeren
+                        🏁 Uitslagen
                     </button>
                     <button className={`session-tab ${tab === 'drivers' ? 'active' : ''}`} onClick={() => setTab('drivers')}>
-                        👤 Beheer Coureurs
+                        👤 Coureurs
                     </button>
                     <button className={`session-tab ${tab === 'players' ? 'active' : ''}`} onClick={() => setTab('players')}>
                         👥 Spelers
                     </button>
                     <button className={`session-tab ${tab === 'log' ? 'active' : ''}`} onClick={() => setTab('log')}>
-                        📋 Log ({log.length})
+                        📋 Log
                     </button>
                 </div>
 
@@ -352,8 +434,6 @@ export default function AdminDashboard() {
                                             <th>Pos</th>
                                             <th>Coureur</th>
                                             <th>Punten</th>
-                                            <th>DNF</th>
-                                            <th>FL</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -374,14 +454,6 @@ export default function AdminDashboard() {
                                                         value={row.points_awarded}
                                                         onChange={e => updateRow(row.position, 'points_awarded', Number(e.target.value))} />
                                                 </td>
-                                                <td>
-                                                    <input type="checkbox" checked={row.is_dnf}
-                                                        onChange={e => updateRow(row.position, 'is_dnf', e.target.checked)} />
-                                                </td>
-                                                <td>
-                                                    <input type="checkbox" checked={row.is_fastest_lap}
-                                                        onChange={e => updateRow(row.position, 'is_fastest_lap', e.target.checked)} />
-                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -390,22 +462,53 @@ export default function AdminDashboard() {
                         </div>
 
                         {/* Action buttons */}
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            <button className="btn btn-primary" onClick={saveResults} disabled={saving}>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                            <button className="btn btn-primary" style={{ flex: '1 1 180px' }} onClick={saveResults} disabled={saving}>
                                 💾 Uitslag Opslaan
                             </button>
-                            <button className="btn btn-secondary" onClick={calculatePoints} disabled={saving}
-                                style={{ background: 'rgba(0,210,106,0.15)', borderColor: 'var(--green)' }}>
+                            <button className="btn btn-secondary" style={{ flex: '1 1 180px', background: 'rgba(0,210,106,0.15)', borderColor: 'var(--green)' }} onClick={calculatePoints} disabled={saving}>
                                 🧮 Punten Berekenen
                             </button>
-                            <button className="btn btn-secondary" onClick={updatePrices} disabled={saving}
-                                style={{ background: 'rgba(245,166,35,0.15)', borderColor: 'var(--amber)' }}>
-                                💰 Prijzen Bijwerken
+                            <button className="btn btn-primary" style={{ flex: '1 1 180px', background: 'var(--green)', borderColor: 'var(--green)' }} onClick={completeWeekend} disabled={saving || selectedRaceObj?.status === 'completed'}>
+                                🏁 Voltooi Weekend
                             </button>
                             <button className="btn btn-secondary" onClick={deleteResults} disabled={saving}
-                                style={{ background: 'rgba(255, 36, 66, 0.15)', borderColor: 'var(--red)', color: 'var(--red)', marginLeft: 'auto' }}>
-                                🗑️ Uitslag Wissen
+                                style={{ flex: '1 1 140px', background: 'rgba(255, 36, 66, 0.15)', borderColor: 'var(--red)', color: 'var(--red)' }}>
+                                🗑️ Wissen
                             </button>
+                        </div>
+
+                        {/* Test Tools Section */}
+                        <div className="card" style={{ border: '1px solid var(--amber)', background: 'rgba(245, 166, 35, 0.05)' }}>
+                            <h3 style={{ margin: '0 0 12px', fontSize: '1rem', color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                🛠️ Test & Simulatie Tools
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
+                                Gebruik deze tools om het verloop van een race-weekend te testen.
+                            </p>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {(!selectedRaceObj?.lock_datetime || new Date(selectedRaceObj.lock_datetime) > new Date()) ? (
+                                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 12px', background: 'rgba(255, 193, 7, 0.1)', borderColor: 'var(--amber)' }}
+                                        onClick={lockRaceNow} disabled={saving}>
+                                        🔒 Deadline Nu (Vergrendelen)
+                                    </button>
+                                ) : (
+                                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 12px', background: 'rgba(0, 123, 255, 0.1)', borderColor: '#007bff' }}
+                                        onClick={openRaceNow} disabled={saving}>
+                                        🔓 Reopen Race (Ontgrendelen)
+                                    </button>
+                                )}
+
+                                <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+                                    onClick={restoreDeadline} disabled={saving}>
+                                    📅 Herstel naar Kalender
+                                </button>
+
+                                <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 12px', background: 'rgba(255, 36, 66, 0.1)', borderColor: 'rgba(255, 36, 66, 0.3)', color: 'var(--red)' }}
+                                    onClick={resetRaceData} disabled={saving}>
+                                    🧹 Reset Race Data
+                                </button>
+                            </div>
                         </div>
                     </>
                 )}
