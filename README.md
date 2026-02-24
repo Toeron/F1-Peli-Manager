@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/images/banner_calendar.png" alt="F1 Peli-Manager Banner" width="100%" style="border-radius: 12px; margin-bottom: 20px" />
+  <img src="public/images/banner_dashboard.png" alt="F1 Peli-Manager Banner" width="100%" style="border-radius: 12px; margin-bottom: 20px" />
 
   # 🏎️ F1 Peli-Manager
 
