@@ -260,6 +260,24 @@ export default function Leagues() {
         loadData()
     }
 
+    async function leaveLeague(leagueId) {
+        if (!window.confirm('Weet je zeker dat je deze league wilt verlaten?')) return
+
+        const { error: err } = await supabase
+            .from('league_members')
+            .delete()
+            .eq('league_id', leagueId)
+            .eq('user_id', profile.id)
+
+        if (err) {
+            setError(err.message)
+            return
+        }
+
+        setSuccess('League verlaten')
+        loadData()
+    }
+
     function formatBudget(val) {
         return '$' + (Number(val) / 1000000).toFixed(1) + 'M'
     }
@@ -478,6 +496,13 @@ export default function Leagues() {
                                                         style={{ color: 'var(--red)', borderColor: 'rgba(255, 24, 1, 0.2)' }}
                                                         onClick={() => deleteLeague(league.id)}>
                                                         🗑️ Verwijderen
+                                                    </button>
+                                                )}
+                                                {league.owner_id !== profile.id && (
+                                                    <button className="btn btn-secondary btn-small"
+                                                        style={{ color: 'var(--red)', borderColor: 'rgba(255, 24, 1, 0.2)' }}
+                                                        onClick={() => leaveLeague(league.id)}>
+                                                        🚪 Verlaten
                                                     </button>
                                                 )}
                                                 <button className="btn btn-secondary btn-small"
