@@ -161,6 +161,7 @@ select {
   justify-content: center;
   font-weight: 700;
   font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
 /* Mobile nav */

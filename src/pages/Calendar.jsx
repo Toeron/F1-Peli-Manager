@@ -82,7 +82,7 @@ export default function Calendar() {
                                     {status === 'completed' && <span className="badge badge-done">✓</span>}
                                     {isNext && <span className="badge badge-live">Volgende</span>}
                                     {status === 'upcoming' && (
-                                        <Link to={`/team/${race.id}`} className="btn btn-secondary btn-small">
+                                        <Link to={`/wizard/${race.id}`} className="btn btn-secondary btn-small">
                                             Kiezen
                                         </Link>
                                     )}

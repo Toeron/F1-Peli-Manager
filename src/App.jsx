@@ -3,8 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import Dashboard from './pages/Dashboard'
-import TeamSelection from './pages/TeamSelection'
-import Predictions from './pages/Predictions'
+import PredictionWizard from './pages/PredictionWizard'
 import Calendar from './pages/Calendar'
 import Leagues from './pages/Leagues'
 import Profile from './pages/Profile'
@@ -28,8 +27,7 @@ function AppRoutes() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
-                <Route path="team/:raceId" element={<TeamSelection />} />
-                <Route path="predictions/:raceId" element={<Predictions />} />
+                <Route path="wizard/:raceId" element={<PredictionWizard />} />
                 <Route path="race/:raceId" element={<RaceOverview />} />
                 <Route path="results/:raceId/player/:userId" element={<PlayerOverview />} />
                 <Route path="results/:raceId" element={<RaceResults />} />

@@ -210,7 +210,7 @@ export default function PlayerOverview() {
                     ) : (
                         <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
                             <p>Nog geen team gekozen</p>
-                            {isOwner && <Link to={`/team/${raceId}`} className="btn btn-primary" style={{ marginTop: 8 }}>Team Kiezen</Link>}
+                            {isOwner && <Link to={`/wizard/${raceId}`} className="btn btn-primary" style={{ marginTop: 8 }}>Team Kiezen</Link>}
                         </div>
                     )}
                 </div>
@@ -219,7 +219,7 @@ export default function PlayerOverview() {
                 <div className="card" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <h2 style={{ margin: 0 }}>🎯 Voorspellingen</h2>
-                        {isOwner && <Link to={`/predictions/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>}
+                        {isOwner && <Link to={`/wizard/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>}
                     </div>
 
                     {!canSeeDetails ? (

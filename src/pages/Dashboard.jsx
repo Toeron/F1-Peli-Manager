@@ -219,9 +219,8 @@ export default function Dashboard() {
                             Voorspellingen sluiten 5 minuten voor de kwalificatie
                         </p>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <Link to={`/team/${nextRace.id}`} className="btn btn-primary">🏎️ Team Kiezen</Link>
-                            <Link to={`/predictions/${nextRace.id}`} className="btn btn-secondary">🏆 Voorspellen</Link>
-                            <Link to={`/race/${nextRace.id}`} className="btn btn-secondary">📋 Overzicht</Link>
+                            <Link to={`/wizard/${nextRace.id}`} className="btn btn-primary">⚙️ Mijn Team & Voorspelling</Link>
+                            <Link to={`/race/${nextRace.id}`} className="btn btn-secondary">📋 Mijn Overzicht</Link>
                         </div>
                     </div>
                 )}
@@ -248,7 +247,7 @@ export default function Dashboard() {
                     ) : (
                         <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
                             <p>Je hebt nog geen team gekozen voor het komende weekend.</p>
-                            {nextRace && <Link to={`/team/${nextRace.id}`} className="btn btn-primary" style={{ marginTop: 12 }}>Team Kiezen</Link>}
+                            {nextRace && <Link to={`/wizard/${nextRace.id}`} className="btn btn-primary" style={{ marginTop: 12 }}>Team Kiezen</Link>}
                         </div>
                     )}
                 </div>

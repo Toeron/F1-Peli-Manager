@@ -61,22 +61,24 @@ export default function RaceOverview() {
         <div className="page">
             <div className="container" style={{ maxWidth: 800 }}>
                 {/* Header */}
-                <div className="page-header">
-                    <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Dashboard</Link>
-                    <h1 style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <Flag code={race?.circuits?.country_code} size={36} /> {race?.name}
-                    </h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>
-                        Ronde {race?.round} — {race?.circuits?.name}, {race?.circuits?.city}
-                        {race?.is_sprint_weekend && <span className="badge badge-sprint" style={{ marginLeft: 8 }}>⚡ Sprint</span>}
-                    </p>
+                <div className="page-header banner-calendar">
+                    <div className="page-header-content">
+                        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Dashboard</Link>
+                        <h1 style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <Flag code={race?.circuits?.country_code} size={36} /> {race?.name}
+                        </h1>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                            Ronde {race?.round} — {race?.circuits?.name}, {race?.circuits?.city}
+                            {race?.is_sprint_weekend && <span className="badge badge-sprint" style={{ marginLeft: 8 }}>⚡ Sprint</span>}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Team Section */}
                 <div className="card" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <h2 style={{ margin: 0 }}>🏎️ Mijn Team</h2>
-                        <Link to={`/team/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>
+                        <Link to={`/wizard/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>
                     </div>
 
                     {teamDrivers.length > 0 ? (
@@ -106,7 +108,7 @@ export default function RaceOverview() {
                     ) : (
                         <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
                             <p>Nog geen team gekozen</p>
-                            <Link to={`/team/${raceId}`} className="btn btn-primary" style={{ marginTop: 8 }}>Team Kiezen</Link>
+                            <Link to={`/wizard/${raceId}`} className="btn btn-primary" style={{ marginTop: 8 }}>Team Kiezen</Link>
                         </div>
                     )}
                 </div>
@@ -115,7 +117,7 @@ export default function RaceOverview() {
                 <div className="card" style={{ marginBottom: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <h2 style={{ margin: 0 }}>🎯 Voorspellingen</h2>
-                        <Link to={`/predictions/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>
+                        <Link to={`/wizard/${raceId}`} className="btn btn-secondary btn-small">Wijzigen</Link>
                     </div>
 
                     {sessions.map(sess => {

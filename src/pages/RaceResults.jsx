@@ -131,15 +131,17 @@ export default function RaceResults() {
         <div className="page">
             <div className="container" style={{ maxWidth: 900 }}>
                 {/* Header */}
-                <div className="page-header" style={{ textAlign: 'center' }}>
-                    <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Dashboard</Link>
-                    <div style={{ fontSize: '2.5rem', marginTop: 8 }}>
-                        <Flag code={race?.circuits?.country_code} size={48} />
+                <div className="page-header banner-calendar" style={{ textAlign: 'center' }}>
+                    <div className="page-header-content">
+                        <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>← Dashboard</Link>
+                        <div style={{ fontSize: '2.5rem', marginTop: 8 }}>
+                            <Flag code={race?.circuits?.country_code} size={48} />
+                        </div>
+                        <h1 style={{ marginTop: 4 }}>{race?.name}</h1>
+                        <p style={{ color: 'var(--text-secondary)' }}>
+                            Ronde {race?.round} — {race?.circuits?.name}
+                        </p>
                     </div>
-                    <h1 style={{ marginTop: 4 }}>{race?.name}</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>
-                        Ronde {race?.round} — {race?.circuits?.name}
-                    </p>
                 </div>
 
                 {/* Points summary (Session-based) */}
