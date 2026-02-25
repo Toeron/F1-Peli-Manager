@@ -112,7 +112,9 @@ export default function ScoringRules() {
                             Je krijgt <strong>elke race</strong> een vast budget van <strong>$100M</strong> om je team samen te stellen.
                         </p>
                         <ul style={{ fontSize: '0.9rem', opacity: 0.8, paddingLeft: 20, marginBottom: 16 }}>
-                            <li style={{ marginBottom: 6 }}>De prijzen van coureurs staan vast en blijven het hele seizoen gelijk.</li>
+                            <li style={{ marginBottom: 6 }}>
+                                <strong>Dynamische Coureur Waardes:</strong> Om het spel uitdagend te houden en meer variatie in teams te creëren, zijn de prijzen van coureurs niet statisch. Na elke 4 verreden races worden de waardes van alle coureurs opnieuw bepaald op basis van hun actuele ranking in het Wereldkampioenschap. (Dit wordt door de admin bijgewerkt).
+                            </li>
                             <li style={{ marginBottom: 6 }}>Je moet 4 coureurs kiezen waarvan de totale waarde maximaal $100M is.</li>
                             <li>Geld dat je overhoudt neem je <strong>niet</strong> mee naar de volgende race. Je begint elk volgend raceweekend gewoon weer opnieuw met $100M.</li>
                         </ul>
