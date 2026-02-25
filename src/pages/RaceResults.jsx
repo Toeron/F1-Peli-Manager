@@ -397,6 +397,45 @@ export default function RaceResults() {
                     )
                 )}
 
+                {activeTab === 'race' && predictions['race'] && race?.status === 'completed' && (
+                    <div className="card" style={{ marginTop: 20 }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1.05rem' }}>🎁 Jouw Bonus Voorspellingen</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12, textAlign: 'center' }}>
+                            <div style={{ background: 'var(--bg-input)', padding: 12, borderRadius: 8 }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 6 }}>Snelste Ronde</div>
+                                    {predictions['race'].fastest_lap_driver_id ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <DriverAvatar
+                                                abbreviation={drivers.find(d => d.id === predictions['race'].fastest_lap_driver_id)?.abbreviation}
+                                                name={drivers.find(d => d.id === predictions['race'].fastest_lap_driver_id)?.last_name}
+                                                src={drivers.find(d => d.id === predictions['race'].fastest_lap_driver_id)?.avatar_url}
+                                                size={28}
+                                            />
+                                            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{drivers.find(d => d.id === predictions['race'].fastest_lap_driver_id)?.last_name}</span>
+                                        </div>
+                                    ) : <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>-</span>}
+                                    {race.fastest_lap_driver_id === predictions['race'].fastest_lap_driver_id && <div style={{ color: 'var(--green)', fontSize: '0.75rem', fontWeight: 800, marginTop: 4 }}>+5 PNT</div>}
+                                </div>
+                            </div>
+                            <div style={{ background: 'var(--bg-input)', padding: 12, borderRadius: 8 }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>Safety Car</div>
+                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                    {predictions['race'].safety_car ? 'Ja' : 'Nee'}
+                                </div>
+                                {race.safety_car !== null && race.safety_car === predictions['race'].safety_car && <div style={{ color: 'var(--green)', fontSize: '0.75rem', fontWeight: 800, marginTop: 4 }}>+2 PNT</div>}
+                            </div>
+                            <div style={{ background: 'var(--bg-input)', padding: 12, borderRadius: 8 }}>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>Aantal DNF's</div>
+                                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                                    {predictions['race'].dnfs || 0}
+                                </div>
+                                {race.dnfs !== null && race.dnfs === predictions['race'].dnfs && <div style={{ color: 'var(--green)', fontSize: '0.75rem', fontWeight: 800, marginTop: 4 }}>+5 PNT</div>}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div style={{ textAlign: 'center', marginTop: 20 }}>
                     <Link to="/history" className="btn btn-secondary btn-small">🕒 Terug naar Historie</Link>
                 </div>

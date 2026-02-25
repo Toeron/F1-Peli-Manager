@@ -49,7 +49,7 @@ export default function ScoringRules() {
                     </section>
 
                     <section style={{ marginBottom: 32 }}>
-                        <h2 style={{ fontSize: '1.2rem', marginBottom: 16 }}>🎯 2. Voorspellingen (Top 3)</h2>
+                        <h2 style={{ fontSize: '1.2rem', marginBottom: 16 }}>🎯 2. Voorspellingen (Top 3 & Bonus)</h2>
                         <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: 12 }}>
                             Voor elke sessie voorspel je de Top 3. Je krijgt punten op basis van hoe dicht je bij de werkelijke uitslag zit:
                         </p>
@@ -70,6 +70,15 @@ export default function ScoringRules() {
                         <p style={{ fontSize: '0.8rem', marginTop: 12, opacity: 0.7 }}>
                             De basispunten voor een voorspelling (bij 100% match) zijn gelijk aan de punten die de coureur in die sessie zou verdienen (bijvoorbeeld 25 pnt voor P1 in de race).
                         </p>
+
+                        <div style={{ marginTop: 20, background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 8, border: '1px solid var(--border)' }}>
+                            <h3 style={{ fontSize: '1rem', marginBottom: 12, color: 'var(--text-primary)' }}>🏎️ Extra Hoofdrace Voorspellingen</h3>
+                            <ul style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', paddingLeft: 20, margin: 0 }}>
+                                <li style={{ marginBottom: 6 }}><strong>Snelste Ronde:</strong> +5 PNT als je de coureur correct hebt voorspeld.</li>
+                                <li style={{ marginBottom: 6 }}><strong>Safety Car:</strong> +2 PNT als je correct voorspelt of er een Safety Car op de baan komt.</li>
+                                <li><strong>Aantal DNF's (Uitgevallen coureurs):</strong> +5 PNT als je het exacte aantal correct hebt voorspeld.</li>
+                            </ul>
+                        </div>
                     </section>
 
                     <section style={{ marginBottom: 32 }}>

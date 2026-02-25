@@ -315,6 +315,34 @@ export default function PlayerOverview() {
                                             Nog geen voorspelling
                                         </div>
                                     )}
+
+                                    {sess.key === 'race' && pred && (
+                                        <div style={{ marginTop: 16, padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                                            <h4 style={{ margin: '0 0 10px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Bonus Voorspellingen Hoofdrace</h4>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, textAlign: 'center', fontSize: '0.85rem' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                    <div style={{ color: 'var(--text-muted)', marginBottom: 6 }}>Snelste Ronde</div>
+                                                    {pred.fastest_lap_driver_id ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                            <DriverAvatar abbreviation={getDriver(pred.fastest_lap_driver_id)?.abbreviation} name={getDriver(pred.fastest_lap_driver_id)?.last_name} src={getDriver(pred.fastest_lap_driver_id)?.avatar_url} size={28} />
+                                                            <span style={{ fontWeight: 600 }}>{getDriver(pred.fastest_lap_driver_id)?.last_name}</span>
+                                                        </div>
+                                                    ) : <span style={{ fontWeight: 600 }}>-</span>}
+                                                    {isCompleted && race?.fastest_lap_driver_id && pred.fastest_lap_driver_id === race.fastest_lap_driver_id && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 4 }}>+5 PNT</div>}
+                                                </div>
+                                                <div>
+                                                    <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>Safety Car</div>
+                                                    <div style={{ fontWeight: 600 }}>{pred.safety_car ? 'Ja' : 'Nee'}</div>
+                                                    {isCompleted && race?.safety_car !== null && pred.safety_car === race.safety_car && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 2 }}>+2 PNT</div>}
+                                                </div>
+                                                <div>
+                                                    <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>Aantal DNF's</div>
+                                                    <div style={{ fontWeight: 600 }}>{pred.dnfs || 0}</div>
+                                                    {isCompleted && race?.dnfs !== null && pred.dnfs === race.dnfs && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 2 }}>+5 PNT</div>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )
                         })

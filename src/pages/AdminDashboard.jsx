@@ -17,6 +17,7 @@ export default function AdminDashboard() {
     const [log, setLog] = useState([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [raceExtras, setRaceExtras] = useState({ fastest_lap_driver_id: '', safety_car: false, dnfs: 0 })
 
     useEffect(() => { loadData() }, [])
 
@@ -46,7 +47,15 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (selectedRace) {
             loadResults()
-            setSelectedRaceObj(races.find(r => r.id === selectedRace))
+            const race = races.find(r => r.id === selectedRace)
+            setSelectedRaceObj(race)
+            if (race) {
+                setRaceExtras({
+                    fastest_lap_driver_id: race.fastest_lap_driver_id || '',
+                    safety_car: race.safety_car || false,
+                    dnfs: race.dnfs || 0
+                })
+            }
         }
     }, [selectedRace, selectedSession, races])
 
@@ -110,6 +119,17 @@ export default function AdminDashboard() {
     async function saveResults() {
         setSaving(true)
         addLog(`Opslaan ${selectedSession} resultaten...`)
+
+        if (selectedSession === 'race') {
+            const { error: extErr } = await supabase.from('races')
+                .update({
+                    fastest_lap_driver_id: raceExtras.fastest_lap_driver_id || null,
+                    safety_car: raceExtras.safety_car,
+                    dnfs: raceExtras.dnfs
+                })
+                .eq('id', selectedRace)
+            if (extErr) addLog(`❌ Fout extra data: ${extErr.message}`)
+        }
 
         // Delete existing results for this race/session
         await supabase.from('race_results')
@@ -444,6 +464,74 @@ export default function AdminDashboard() {
                                 </select>
                             </div>
                         </div>
+
+                        {selectedSession === 'race' && (
+                            <div className="card" style={{ marginBottom: 16 }}>
+                                <h3 style={{ marginTop: 0, marginBottom: 12, fontSize: '1rem' }}>🏎️ Aanvullende Race Data</h3>
+                                <div className="grid-3">
+                                    <div className="form-group">
+                                        <label>Snelste Ronde</label>
+                                        <select className="form-input" value={raceExtras.fastest_lap_driver_id} onChange={e => setRaceExtras({ ...raceExtras, fastest_lap_driver_id: e.target.value })}>
+                                            <option value="">— Kies coureur —</option>
+                                            {drivers.map(d => (
+                                                <option key={d.id} value={d.id}>{d.abbreviation} — {d.first_name} {d.last_name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Safety Car?</label>
+                                        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => setRaceExtras({ ...raceExtras, safety_car: true })}
+                                                style={{
+                                                    flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                                                    background: raceExtras.safety_car === true ? 'rgba(0, 210, 106, 0.2)' : 'var(--bg-input)',
+                                                    borderColor: raceExtras.safety_car === true ? 'var(--green)' : 'var(--border)',
+                                                    color: raceExtras.safety_car === true ? 'var(--green)' : 'var(--text-primary)',
+                                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: 600
+                                                }}
+                                            >Ja</button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setRaceExtras({ ...raceExtras, safety_car: false })}
+                                                style={{
+                                                    flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                                                    background: raceExtras.safety_car === false ? 'rgba(255, 60, 60, 0.15)' : 'var(--bg-input)',
+                                                    borderColor: raceExtras.safety_car === false ? '#ff4d4d' : 'var(--border)',
+                                                    color: raceExtras.safety_car === false ? '#ff4d4d' : 'var(--text-primary)',
+                                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: 600
+                                                }}
+                                            >Nee</button>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Aantal DNF's (Max 20)</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+                                            <button
+                                                type="button"
+                                                disabled={(raceExtras?.dnfs || 0) <= 0}
+                                                onClick={() => setRaceExtras({ ...raceExtras, dnfs: Math.max(0, (raceExtras?.dnfs || 0) - 1) })}
+                                                style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '1.2rem', cursor: ((raceExtras?.dnfs || 0) <= 0) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >
+                                                -
+                                            </button>
+                                            <div style={{ flex: 1, textAlign: 'center', fontSize: '1.5rem', fontWeight: 800, background: 'rgba(255,255,255,0.03)', padding: '4px 0', borderRadius: 8, border: '1px solid var(--border)' }}>
+                                                {raceExtras?.dnfs || 0}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                disabled={(raceExtras?.dnfs || 0) >= 20}
+                                                onClick={() => setRaceExtras({ ...raceExtras, dnfs: Math.min(20, (raceExtras?.dnfs || 0) + 1) })}
+                                                style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '1.2rem', cursor: ((raceExtras?.dnfs || 0) >= 20) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Results table */}
                         <div className="card" style={{ marginBottom: 16 }}>

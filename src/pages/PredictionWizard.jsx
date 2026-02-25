@@ -75,6 +75,11 @@ export default function PredictionWizard() {
             const existMap = {}
             existingPreds.forEach(p => {
                 loaded[p.session_type] = { p1: p.p1_driver_id, p2: p.p2_driver_id, p3: p.p3_driver_id }
+                if (p.session_type === 'race') {
+                    loaded[p.session_type].fastest_lap_driver_id = p.fastest_lap_driver_id || ''
+                    loaded[p.session_type].safety_car = p.safety_car || false
+                    loaded[p.session_type].dnfs = p.dnfs || 0
+                }
                 existMap[p.session_type] = p.id
             })
             setPreds(prev => ({ ...prev, ...loaded }))
@@ -178,10 +183,14 @@ export default function PredictionWizard() {
         const { session: sess, position } = pickerPos
 
         const current = { ...preds[sess] }
-        Object.keys(current).forEach(pos => {
-            if (current[pos] === driverId) delete current[pos]
-        })
-        current[position] = driverId
+        if (position === 'fastest_lap_driver_id') {
+            current.fastest_lap_driver_id = driverId
+        } else {
+            ['p1', 'p2', 'p3'].forEach(pos => {
+                if (current[pos] === driverId) delete current[pos]
+            })
+            current[position] = driverId
+        }
 
         setPreds(prev => ({ ...prev, [sess]: current }))
         setPickerPos(null)
@@ -194,6 +203,9 @@ export default function PredictionWizard() {
     }
 
     function sessionComplete(sess) {
+        if (sess === 'race') {
+            return preds[sess]?.p1 && preds[sess]?.p2 && preds[sess]?.p3 && preds[sess]?.fastest_lap_driver_id
+        }
         return preds[sess]?.p1 && preds[sess]?.p2 && preds[sess]?.p3
     }
 
@@ -216,6 +228,12 @@ export default function PredictionWizard() {
             p2_driver_id: preds[sess].p2,
             p3_driver_id: preds[sess].p3,
             locked: false
+        }
+
+        if (sess === 'race') {
+            payload.fastest_lap_driver_id = preds[sess].fastest_lap_driver_id || null
+            payload.safety_car = preds[sess].safety_car || false
+            payload.dnfs = preds[sess].dnfs || 0
         }
 
         let result
@@ -429,9 +447,14 @@ export default function PredictionWizard() {
                         {pickerPos && pickerPos.session === activeTabObj.id && (
                             <div className="modal-overlay" onClick={() => setPickerPos(null)}>
                                 <div className="modal" onClick={e => e.stopPropagation()}>
-                                    <h3>Kies coureur voor P{pickerPos.position.replace('p', '')}</h3>
+                                    <h3>Kies coureur voor {pickerPos.position === 'fastest_lap_driver_id' ? 'Snelste Ronde' : `P${pickerPos.position.replace('p', '')}`}</h3>
                                     {drivers.map(d => {
-                                        const usedInSession = Object.values(preds[activeTabObj.id] || {}).includes(d.id)
+                                        let usedInSession = false;
+                                        if (pickerPos.position === 'fastest_lap_driver_id') {
+                                            usedInSession = preds[activeTabObj.id]?.fastest_lap_driver_id === d.id;
+                                        } else {
+                                            usedInSession = ['p1', 'p2', 'p3'].some(p => preds[activeTabObj.id]?.[p] === d.id);
+                                        }
                                         return (
                                             <div key={d.id} className="modal-driver"
                                                 style={{ opacity: usedInSession ? 0.3 : 1 }}
@@ -444,6 +467,94 @@ export default function PredictionWizard() {
                                             </div>
                                         )
                                     })}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTabObj.id === 'race' && (
+                            <div className="card" style={{ marginTop: 24, padding: 20 }}>
+                                <h3 style={{ margin: '0 0 16px', fontSize: '1.1rem' }}>🏎️ Race Bonus Voorspellingen</h3>
+                                <div className="grid-3">
+                                    <div className="form-group">
+                                        <label>Snelste Ronde</label>
+                                        <div
+                                            onClick={() => !locked && setPickerPos({ session: 'race', position: 'fastest_lap_driver_id' })}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
+                                                background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                                borderRadius: 8, cursor: locked ? 'not-allowed' : 'pointer', marginTop: 4, height: 60
+                                            }}
+                                        >
+                                            {preds.race?.fastest_lap_driver_id ? (
+                                                <>
+                                                    <DriverAvatar
+                                                        abbreviation={getDriver(preds.race.fastest_lap_driver_id)?.abbreviation}
+                                                        name={getDriver(preds.race.fastest_lap_driver_id)?.last_name}
+                                                        src={getDriver(preds.race.fastest_lap_driver_id)?.avatar_url}
+                                                        size={40}
+                                                    />
+                                                    <div style={{ flex: 1, fontWeight: 600 }}>
+                                                        {getDriver(preds.race.fastest_lap_driver_id)?.first_name} {getDriver(preds.race.fastest_lap_driver_id)?.last_name}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div style={{ flex: 1, color: 'var(--text-muted)', fontSize: '0.9rem', paddingLeft: 8 }}>— Kies coureur —</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Safety Car?</label>
+                                        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                                            <button
+                                                type="button"
+                                                disabled={locked}
+                                                onClick={() => setPreds(p => ({ ...p, race: { ...p.race, safety_car: true } }))}
+                                                style={{
+                                                    flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                                                    background: preds.race?.safety_car === true ? 'rgba(0, 210, 106, 0.2)' : 'var(--bg-input)',
+                                                    borderColor: preds.race?.safety_car === true ? 'var(--green)' : 'var(--border)',
+                                                    color: preds.race?.safety_car === true ? 'var(--green)' : 'var(--text-primary)',
+                                                    cursor: locked ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 600
+                                                }}
+                                            >Ja</button>
+                                            <button
+                                                type="button"
+                                                disabled={locked}
+                                                onClick={() => setPreds(p => ({ ...p, race: { ...p.race, safety_car: false } }))}
+                                                style={{
+                                                    flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid',
+                                                    background: preds.race?.safety_car === false || preds.race?.safety_car === undefined ? 'rgba(255, 60, 60, 0.15)' : 'var(--bg-input)',
+                                                    borderColor: preds.race?.safety_car === false || preds.race?.safety_car === undefined ? '#ff4d4d' : 'var(--border)',
+                                                    color: preds.race?.safety_car === false || preds.race?.safety_car === undefined ? '#ff4d4d' : 'var(--text-primary)',
+                                                    cursor: locked ? 'not-allowed' : 'pointer', transition: 'all 0.2s', fontWeight: 600
+                                                }}
+                                            >Nee</button>
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Aantal DNF's (Max 20)</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+                                            <button
+                                                type="button"
+                                                disabled={locked || (preds.race?.dnfs || 0) <= 0}
+                                                onClick={() => setPreds(p => ({ ...p, race: { ...p.race, dnfs: Math.max(0, (p.race?.dnfs || 0) - 1) } }))}
+                                                style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '1.2rem', cursor: (locked || (preds.race?.dnfs || 0) <= 0) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >
+                                                -
+                                            </button>
+                                            <div style={{ flex: 1, textAlign: 'center', fontSize: '1.5rem', fontWeight: 800, background: 'rgba(255,255,255,0.03)', padding: '4px 0', borderRadius: 8, border: '1px solid var(--border)' }}>
+                                                {preds.race?.dnfs || 0}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                disabled={locked || (preds.race?.dnfs || 0) >= 20}
+                                                onClick={() => setPreds(p => ({ ...p, race: { ...p.race, dnfs: Math.min(20, (p.race?.dnfs || 0) + 1) } }))}
+                                                style={{ width: 44, height: 44, borderRadius: '50%', border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: '1.2rem', cursor: (locked || (preds.race?.dnfs || 0) >= 20) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
