@@ -240,6 +240,9 @@ export default function Dashboard() {
                                     <div className="driver-info">
                                         <div className="driver-name" style={{ fontSize: '0.85rem' }}>{d.first_name} {d.last_name}</div>
                                         <div className="driver-team">{d.constructors?.name}</div>
+                                        <div className="driver-price" style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 600, marginTop: 4 }}>
+                                            {formatBudget(d.current_value)}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
