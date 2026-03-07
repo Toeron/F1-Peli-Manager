@@ -300,10 +300,10 @@ export default function PlayerOverview() {
                                     </h3>
 
                                     {pred ? (
-                                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', justifyContent: 'center' }}>
+                                        <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', justifyContent: 'center' }}>
                                             {/* P2 */}
                                             <div style={{ textAlign: 'center', flex: 1, position: 'relative' }}>
-                                                <DriverAvatar abbreviation={p2?.abbreviation} name={p2?.last_name} src={p2?.avatar_url} size={88} />
+                                                <DriverAvatar abbreviation={p2?.abbreviation} name={p2?.last_name} src={p2?.avatar_url} size={window.innerWidth < 480 ? 64 : 88} />
                                                 <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p2?.last_name}</div>
                                                 <div style={{
                                                     background: 'rgba(192,192,192,0.15)', border: '1px solid rgba(192,192,192,0.3)',
@@ -324,7 +324,7 @@ export default function PlayerOverview() {
 
                                             {/* P1 */}
                                             <div style={{ textAlign: 'center', flex: 1, position: 'relative' }}>
-                                                <DriverAvatar abbreviation={p1?.abbreviation} name={p1?.last_name} src={p1?.avatar_url} size={104} />
+                                                <DriverAvatar abbreviation={p1?.abbreviation} name={p1?.last_name} src={p1?.avatar_url} size={window.innerWidth < 480 ? 84 : 104} />
                                                 <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 4 }}>{p1?.last_name}</div>
                                                 <div style={{
                                                     background: 'rgba(255,215,0,0.15)', border: '1px solid rgba(255,215,0,0.3)',
@@ -346,7 +346,7 @@ export default function PlayerOverview() {
 
                                             {/* P3 */}
                                             <div style={{ textAlign: 'center', flex: 1, position: 'relative' }}>
-                                                <DriverAvatar abbreviation={p3?.abbreviation} name={p3?.last_name} src={p3?.avatar_url} size={80} />
+                                                <DriverAvatar abbreviation={p3?.abbreviation} name={p3?.last_name} src={p3?.avatar_url} size={window.innerWidth < 480 ? 60 : 80} />
                                                 <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: 4 }}>{p3?.last_name}</div>
                                                 <div style={{
                                                     background: 'rgba(205,127,50,0.15)', border: '1px solid rgba(205,127,50,0.3)',
@@ -415,7 +415,7 @@ export default function PlayerOverview() {
                             </span>
                         </h2>
 
-                        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                        <div className="table-container">
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
