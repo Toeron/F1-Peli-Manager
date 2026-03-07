@@ -579,6 +579,21 @@ tr.highlight td {
   color: var(--text-secondary);
 }
 
+.badge-team {
+  background: rgba(0, 150, 255, 0.15);
+  color: #0096ff;
+}
+
+.badge-voorspelling {
+  background: rgba(155, 89, 182, 0.15);
+  color: #9b59b6;
+}
+
+.badge-bonus {
+  background: rgba(241, 196, 15, 0.15);
+  color: #f1c40f;
+}
+
 @keyframes pulse {
 
   0%,

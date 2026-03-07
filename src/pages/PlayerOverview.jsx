@@ -15,13 +15,14 @@ export default function PlayerOverview() {
     const [predictions, setPredictions] = useState({})
     const [raceResults, setRaceResults] = useState({})
     const [drivers, setDrivers] = useState([])
+    const [userRaceScore, setUserRaceScore] = useState(null)
     const [loading, setLoading] = useState(true)
     const [adminSight, setAdminSight] = useState(true)
 
     useEffect(() => { if (currentUserProfile) loadData() }, [raceId, userId, currentUserProfile])
 
     async function loadData() {
-        const [raceRes, driverRes, teamRes, predRes, profileRes, resultsRes] = await Promise.all([
+        const [raceRes, driverRes, teamRes, predRes, profileRes, resultsRes, userRaceScoreRes] = await Promise.all([
             supabase.from('races').select('*, circuits(*)').eq('id', raceId).single(),
             supabase.from('drivers').select('*, constructors(*)').eq('active', true),
             supabase.from('team_selections')
@@ -29,13 +30,15 @@ export default function PlayerOverview() {
                 .eq('user_id', userId).eq('race_id', raceId).maybeSingle(),
             supabase.from('predictions').select('*').eq('user_id', userId).eq('race_id', raceId),
             supabase.from('profiles').select('*').eq('id', userId).single(),
-            supabase.from('race_results').select('*').eq('race_id', raceId)
+            supabase.from('race_results').select('*').eq('race_id', raceId),
+            supabase.from('user_race_scores').select('*').eq('user_id', userId).eq('race_id', raceId).maybeSingle()
         ])
 
         setRace(raceRes.data)
         setDrivers(driverRes.data || [])
         setTeam(teamRes.data)
         setPlayerProfile(profileRes.data)
+        setUserRaceScore(userRaceScoreRes.data)
 
         const predMap = {}
         predRes.data?.forEach(p => { predMap[p.session_type] = p })
@@ -62,7 +65,7 @@ export default function PlayerOverview() {
     }
 
     function getDriverTotalTeamPoints(driverId) {
-        if (!isCompleted || !teamDrivers) return null
+        if (!teamDrivers) return null
         let total = 0
         const tDrivers = teamDrivers.map(d => d.id)
         if (raceResults['qualifying']) {
@@ -85,13 +88,65 @@ export default function PlayerOverview() {
     }
 
     function getPredictionPointsDisplay(session, driverId) {
-        if (!isCompleted || !raceResults[session]) return null
+        if (!raceResults[session]) return null
         const pos = getDriverPosition(session, driverId)
         if (!pos) return { pts: 0, label: null }
         return {
             pts: getPredictionPoints(session, pos, driverId, predictions),
             match: getPredictionMatch(session, pos, driverId, predictions)
         }
+    }
+
+    function calculateScoreBreakdown() {
+        const breakdown = []
+        const tDrivers = teamDrivers.map(d => d.id)
+
+        // Team points
+        teamDrivers.forEach(d => {
+            sessions.forEach(sess => {
+                const pos = getDriverPosition(sess.key, d.id)
+                if (pos) {
+                    const pts = getTeamPointsForDriver(sess.key, pos, d.id, tDrivers, predictions)
+                    if (pts > 0) {
+                        breakdown.push({ category: 'Team', detail: `${d.last_name} (${sess.label})`, pts })
+                    }
+                }
+            })
+        })
+
+        // Prediction points
+        sessions.forEach(sess => {
+            const pred = predictions[sess.key]
+            if (pred) {
+                const pIds = [pred.p1_driver_id, pred.p2_driver_id, pred.p3_driver_id].filter(Boolean)
+                pIds.forEach(id => {
+                    const pos = getDriverPosition(sess.key, id)
+                    if (pos) {
+                        const pts = getPredictionPoints(sess.key, pos, id, predictions)
+                        if (pts > 0) {
+                            const d = getDriver(id)
+                            breakdown.push({ category: 'Voorspelling', detail: `${d?.last_name} (${sess.label})`, pts })
+                        }
+                    }
+                })
+            }
+        })
+
+        // Race bonuses
+        if (predictions['race'] && race) {
+            const pred = predictions['race']
+            if (race.fastest_lap_driver_id && pred.fastest_lap_driver_id === race.fastest_lap_driver_id) {
+                breakdown.push({ category: 'Bonus', detail: 'Snelste Ronde', pts: 5 })
+            }
+            if (race.safety_car !== null && pred.safety_car === race.safety_car) {
+                breakdown.push({ category: 'Bonus', detail: 'Safety Car', pts: 2 })
+            }
+            if (race.dnfs !== null && pred.dnfs === race.dnfs) {
+                breakdown.push({ category: 'Bonus', detail: 'Aantal DNF\'s', pts: 5 })
+            }
+        }
+
+        return breakdown
     }
 
     function formatPrice(val) {
@@ -121,6 +176,7 @@ export default function PlayerOverview() {
     const isAdmin = currentUserProfile?.is_admin
     const locked = isLocked()
     const isCompleted = race?.status === 'completed'
+    const scoreBreakdown = calculateScoreBreakdown()
 
     // Admin can toggle their "sight" for simulation
     const effectiveAdminSight = isAdmin && adminSight
@@ -328,17 +384,17 @@ export default function PlayerOverview() {
                                                             <span style={{ fontWeight: 600 }}>{getDriver(pred.fastest_lap_driver_id)?.last_name}</span>
                                                         </div>
                                                     ) : <span style={{ fontWeight: 600 }}>-</span>}
-                                                    {isCompleted && race?.fastest_lap_driver_id && pred.fastest_lap_driver_id === race.fastest_lap_driver_id && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 4 }}>+5 PNT</div>}
+                                                    {race?.fastest_lap_driver_id && pred.fastest_lap_driver_id === race.fastest_lap_driver_id && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 4 }}>+5 PNT</div>}
                                                 </div>
                                                 <div>
                                                     <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>Safety Car</div>
                                                     <div style={{ fontWeight: 600 }}>{pred.safety_car ? 'Ja' : 'Nee'}</div>
-                                                    {isCompleted && race?.safety_car !== null && pred.safety_car === race.safety_car && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 2 }}>+2 PNT</div>}
+                                                    {race?.safety_car !== null && pred.safety_car === race.safety_car && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 2 }}>+2 PNT</div>}
                                                 </div>
                                                 <div>
                                                     <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>Aantal DNF's</div>
                                                     <div style={{ fontWeight: 600 }}>{pred.dnfs || 0}</div>
-                                                    {isCompleted && race?.dnfs !== null && pred.dnfs === race.dnfs && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 2 }}>+5 PNT</div>}
+                                                    {race?.dnfs !== null && pred.dnfs === race.dnfs && <div style={{ color: 'var(--green)', fontSize: '0.7rem', fontWeight: 700, marginTop: 2 }}>+5 PNT</div>}
                                                 </div>
                                             </div>
                                         </div>
@@ -348,6 +404,60 @@ export default function PlayerOverview() {
                         })
                     )}
                 </div>
+
+                {/* Score Breakdown Section */}
+                {canSeeDetails && scoreBreakdown.length > 0 && (
+                    <div className="card" style={{ marginBottom: 20, borderLeft: '4px solid var(--green)' }}>
+                        <h2 style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            📊 Punten Verdeling
+                            <span style={{ fontSize: '1.2rem', color: 'var(--green)' }}>
+                                {userRaceScore?.total_points || 0} PNT
+                            </span>
+                        </h2>
+
+                        <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
+                                        <th style={{ padding: '12px 16px', fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Categorie</th>
+                                        <th style={{ padding: '12px 16px', fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Omschrijving</th>
+                                        <th style={{ padding: '12px 16px', fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Punten</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {scoreBreakdown.map((item, idx) => (
+                                        <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                                            <td style={{ padding: '10px 16px', fontSize: '0.85rem' }}>
+                                                <span className={`badge badge-${item.category.toLowerCase()}`} style={{ fontSize: '0.7rem' }}>
+                                                    {item.category}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '10px 16px', fontSize: '0.9rem' }}>{item.detail}</td>
+                                            <td style={{ padding: '10px 16px', fontSize: '0.9rem', fontWeight: 700, textAlign: 'right', color: 'var(--green)' }}>
+                                                +{item.pts}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {scoreBreakdown.length === 0 && (
+                                        <tr>
+                                            <td colSpan="3" style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>
+                                                Geen punten gescoord voor deze race.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                                <tfoot>
+                                    <tr style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 800 }}>
+                                        <td colSpan="2" style={{ padding: '12px 16px' }}>TOTAAL</td>
+                                        <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--green)', fontSize: '1.1rem' }}>
+                                            {userRaceScore?.total_points || 0}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
                 {/* Status bar */}
                 <div className="card" style={{ textAlign: 'center' }}>

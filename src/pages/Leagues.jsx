@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -54,62 +54,69 @@ function CamelTrack({ players }) {
     return (
         <div style={{ marginBottom: 32, padding: '0 4px' }}>
             <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16, letterSpacing: '1px' }}>Koplopers (Top 5) & Puntenverschil</h3>
-            <div style={{ position: 'relative', width: '100%', height: 90, background: 'linear-gradient(90deg, rgba(255,255,255,0.01) 0%, rgba(255,255,255,0.04) 100%)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
+            <div style={{ position: 'relative', width: '100%', height: 110, background: 'linear-gradient(90deg, rgba(255,255,255,0.01) 0%, rgba(255,255,255,0.04) 100%)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
                 {/* Finish line */}
                 <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, background: 'repeating-linear-gradient(45deg, #fff, #fff 4px, #000 4px, #000 8px)', borderTopRightRadius: 11, borderBottomRightRadius: 11, opacity: 0.6 }} />
 
-                {Object.values(groupedPlayers).map(group => {
-                    return group.map((p, groupIndex) => {
-                        // Find global index for medal colors
-                        const globalIndex = trackPlayers.findIndex(tp => tp.id === p.id);
-                        const percentage = Math.max(0, Math.min(100, ((p.total_points - minPoints) / range) * 100));
+                {trackPlayers.map((p, globalIndex) => {
+                    const percentage = Math.max(0, Math.min(100, ((p.total_points - minPoints) / range) * 100));
 
-                        // If there are multiple people here, fan them out slightly
-                        // groupIndex 0 => center, groupIndex 1 => slightly up-left, groupIndex 2 => slightly down-right, etc.
-                        const fanOffsets = [
-                            { x: 0, y: 0 },
-                            { x: -10, y: -15 },
-                            { x: 10, y: 15 },
-                            { x: -20, y: -30 },
-                            { x: 20, y: 30 }
-                        ];
-                        const offset = fanOffsets[groupIndex % 5];
+                    // Fixed staggering offsets based on RANK to avoid overlap even if scores are close
+                    const fanOffsets = [
+                        { x: 0, y: -25 },  // P1: Up
+                        { x: -5, y: 25 },  // P2: Down
+                        { x: -10, y: 0 },   // P3: Middle
+                        { x: -15, y: -35 }, // P4: Far Up
+                        { x: -20, y: 35 }   // P5: Far Down
+                    ];
+                    const offset = fanOffsets[globalIndex % 5];
 
-                        return (
-                            <div key={p.id} style={{
-                                position: 'absolute',
-                                left: `calc(30px + (100% - 60px) * ${percentage / 100} + ${offset.x}px)`,
-                                top: `calc(50% + ${offset.y}px)`,
-                                transform: 'translate(-50%, -50%)',
-                                transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                                zIndex: 10 - groupIndex, // primary stays on top
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center'
+                    return (
+                        <div key={p.id} style={{
+                            position: 'absolute',
+                            left: `calc(30px + (100% - 60px) * ${percentage / 100} + ${offset.x}px)`,
+                            top: `calc(50% + ${offset.y}px)`,
+                            transform: 'translate(-50%, -50%)',
+                            transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                            zIndex: 20 - globalIndex, // P1 is always on top visually
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center'
+                        }}>
+                            <div className="nav-avatar" style={{
+                                width: 40, height: 40, border: `3px solid ${globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)'}`,
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                overflow: 'hidden',
+                                background: 'var(--bg-elevated)',
+                                fontSize: '1.2rem',
+                                padding: 0
                             }}>
-                                <div className="nav-avatar" style={{
-                                    width: 44, height: 44, border: `3px solid ${globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)'}`,
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                                    overflow: 'hidden',
-                                    background: 'var(--bg-elevated)',
-                                    fontSize: '1.2rem',
-                                    padding: 0
-                                }}>
-                                    {p.avatar_url ? (
-                                        <img src={p.avatar_url} alt="Av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        (p.display_name || p.username || '?')[0].toUpperCase()
-                                    )}
-                                </div>
-                                {/* Only show the score badge for the first person in the group to avoid label overlap */}
-                                {groupIndex === 0 && (
-                                    <div style={{ position: 'absolute', top: -16, right: -16, fontSize: '0.75rem', fontWeight: 800, background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 8, whiteSpace: 'nowrap', border: '2px solid', borderColor: globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)', color: globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--text-primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.4)', zIndex: 20 }}>
-                                        {p.total_points}
-                                    </div>
+                                {p.avatar_url ? (
+                                    <img src={p.avatar_url} alt="Av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    (p.display_name || p.username || '?')[0].toUpperCase()
                                 )}
                             </div>
-                        )
-                    })
+                            <div style={{
+                                position: 'absolute',
+                                top: -14,
+                                right: -14,
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
+                                background: 'var(--bg-elevated)',
+                                padding: '1px 5px',
+                                borderRadius: 6,
+                                whiteSpace: 'nowrap',
+                                border: '1px solid',
+                                borderColor: globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)',
+                                color: globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--text-primary)',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                                zIndex: 21
+                            }}>
+                                {p.total_points}
+                            </div>
+                        </div>
+                    )
                 })}
             </div>
         </div>
@@ -118,7 +125,8 @@ function CamelTrack({ players }) {
 
 export default function Leagues() {
     const { profile } = useAuth()
-    const [tab, setTab] = useState('leagues')
+    const [searchParams, setSearchParams] = useSearchParams()
+    const [tab, setTab] = useState(searchParams.get('tab') || 'leagues')
     const [globalRanking, setGlobalRanking] = useState([])
     const [myLeagues, setMyLeagues] = useState([])
     const [showCreate, setShowCreate] = useState(false)
@@ -129,8 +137,16 @@ export default function Leagues() {
     const [success, setSuccess] = useState('')
     const [lastRaceId, setLastRaceId] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [selectedLeagueId, setSelectedLeagueId] = useState('')
+    const [selectedLeagueId, setSelectedLeagueId] = useState(searchParams.get('leagueId') || '')
     const [leagueRanking, setLeagueRanking] = useState([])
+
+    // Update search params when tab or selectedLeagueId changes
+    useEffect(() => {
+        const params = new URLSearchParams()
+        if (tab) params.set('tab', tab)
+        if (selectedLeagueId) params.set('leagueId', selectedLeagueId)
+        setSearchParams(params, { replace: true })
+    }, [tab, selectedLeagueId, setSearchParams])
 
     useEffect(() => { loadData() }, [profile])
 
@@ -168,7 +184,12 @@ export default function Leagues() {
             const leaguesList = memberships?.map(m => m.leagues).filter(l => l && !l.is_global) || []
             setMyLeagues(leaguesList)
             if (leaguesList.length > 0 && !selectedLeagueId) {
-                setSelectedLeagueId(leaguesList[0].id)
+                const initialLeagueId = searchParams.get('leagueId')
+                if (initialLeagueId && leaguesList.some(l => l.id === initialLeagueId)) {
+                    setSelectedLeagueId(initialLeagueId)
+                } else {
+                    setSelectedLeagueId(leaguesList[0].id)
+                }
             } else if (leaguesList.length === 0) {
                 setTab('global')
             }

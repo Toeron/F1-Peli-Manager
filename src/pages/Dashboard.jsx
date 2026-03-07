@@ -14,6 +14,7 @@ export default function Dashboard() {
     const [myTeam, setMyTeam] = useState(null)
     const [globalRank, setGlobalRank] = useState(null)
     const [leagueRanks, setLeagueRanks] = useState([])
+    const [nextRaceScore, setNextRaceScore] = useState(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => { loadData() }, [profile])
@@ -62,6 +63,15 @@ export default function Dashboard() {
                 .eq('race_id', races[0].id)
                 .maybeSingle()
             setMyTeam(team)
+
+            // Check if results are already available for this race
+            const { data: nScore } = await supabase
+                .from('user_race_scores')
+                .select('*')
+                .eq('race_id', races[0].id)
+                .eq('user_id', profile.id)
+                .maybeSingle()
+            setNextRaceScore(nScore)
         }
 
         // Calculate custom ranks
@@ -87,6 +97,7 @@ export default function Dashboard() {
                     .gt('total_points', profile.total_points || 0)
 
                 lRanks.push({
+                    id: member.league_id,
                     name: member.leagues.name,
                     rank: (higherInLeague || 0) + 1
                 })
@@ -128,17 +139,17 @@ export default function Dashboard() {
                         <div className="stat-value">{profile?.total_points || 0}</div>
                         <div className="stat-label">Punten</div>
                     </div>
-                    <div className="stat-card">
+                    <Link to="/leagues?tab=global" className="stat-card" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
                         <div className="stat-value">P{globalRank || '—'}</div>
                         <div className="stat-label">Wereld</div>
-                    </div>
+                    </Link>
                     {leagueRanks.map(lr => (
-                        <div key={lr.name} className="stat-card">
+                        <Link key={lr.id} to={`/leagues?tab=leagues&leagueId=${lr.id}`} className="stat-card" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
                             <div className="stat-value">P{lr.rank}</div>
                             <div className="stat-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 4px' }} title={lr.name}>
                                 {lr.name}
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
 
@@ -219,6 +230,11 @@ export default function Dashboard() {
                             Voorspellingen sluiten 5 minuten voor de kwalificatie
                         </p>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                            {nextRaceScore && (
+                                <Link to={`/results/${nextRace.id}`} className="btn btn-secondary" style={{ background: 'rgba(0, 210, 106, 0.1)', borderColor: 'var(--green)', color: 'var(--green)' }}>
+                                    📊 Bekijk Tussenstand
+                                </Link>
+                            )}
                             <Link to={`/wizard/${nextRace.id}`} className="btn btn-primary">⚙️ Mijn Team & Voorspelling</Link>
                             <Link to={`/race/${nextRace.id}`} className="btn btn-secondary">📋 Mijn Overzicht</Link>
                         </div>
