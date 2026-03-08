@@ -180,7 +180,7 @@ export default function Dashboard() {
 
                             {/* Quick link middle */}
                             <div style={{ flex: '1 1 150px', display: 'flex', justifyContent: 'center' }}>
-                                <Link to={`/results/${allPastRaces[pastRaceIndex].id}?tab=race`} className="btn btn-secondary btn-small" style={{ borderRadius: 20, padding: '6px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--border)', background: 'rgba(255,255,255,0.05)', whiteSpace: 'nowrap' }}>
+                                <Link to={`/results/${allPastRaces[pastRaceIndex].id}?tab=race`} className="btn btn-pulse-green btn-small" style={{ borderRadius: 20, padding: '6px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
                                     🏁 Uitslag Race
                                 </Link>
                             </div>
@@ -192,7 +192,6 @@ export default function Dashboard() {
                                         <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>PNT</span>
                                     </div>
                                     <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4 }}>
-                                        <Link to={`/results/${allPastRaces[pastRaceIndex].id}?tab=leaderboard`} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Tussenstand →</Link>
                                         <Link to={`/results/${allPastRaces[pastRaceIndex].id}/player/${profile?.id}`} style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 700 }}>Mijn details →</Link>
                                     </div>
                                 </div>
@@ -231,11 +230,13 @@ export default function Dashboard() {
                         </p>
                         <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
                             {nextRaceScore && (
-                                <Link to={`/results/${nextRace.id}`} className="btn btn-secondary" style={{ background: 'rgba(0, 210, 106, 0.1)', borderColor: 'var(--green)', color: 'var(--green)' }}>
+                                <Link to={`/results/${nextRace.id}`} className="btn btn-pulse-green" style={{ border: 'none' }}>
                                     📊 Bekijk Tussenstand
                                 </Link>
                             )}
-                            <Link to={`/wizard/${nextRace.id}`} className="btn btn-primary">⚙️ Mijn Team & Voorspelling</Link>
+                            {new Date() < new Date(nextRace.lock_datetime) && (
+                                <Link to={`/wizard/${nextRace.id}`} className="btn btn-primary">⚙️ Mijn Team & Voorspelling</Link>
+                            )}
                             <Link to={`/race/${nextRace.id}`} className="btn btn-secondary">📋 Mijn Overzicht</Link>
                         </div>
                     </div>

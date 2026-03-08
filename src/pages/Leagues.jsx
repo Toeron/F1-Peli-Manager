@@ -336,7 +336,7 @@ export default function Leagues() {
                         <div className="table-container">
                             <table>
                                 <thead>
-                                    <tr><th style={{ width: 40 }}>#</th><th style={{ width: 60 }}>Trend</th><th>Speler</th><th>Punten</th></tr>
+                                    <tr><th style={{ width: 40 }}>#</th><th style={{ width: 60 }}>Trend</th><th>Speler</th><th style={{ textAlign: 'right' }}>Punten</th></tr>
                                 </thead>
                                 <tbody>
                                     {globalRanking.map((p, i) => (
@@ -349,7 +349,7 @@ export default function Leagues() {
                                             </td>
                                             <td>
                                                 {lastRaceId ? (
-                                                    <Link to={`/results/${lastRaceId}/player/${p.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit' }} className="hover-opacity">
+                                                    <Link to={`/results/${lastRaceId}/player/${p.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit', overflow: 'hidden' }} className="hover-opacity">
                                                         <div className="nav-avatar" style={{ width: 56, height: 56, fontSize: '1.3rem', overflow: 'hidden' }}>
                                                             {p.avatar_url ? (
                                                                 <img src={p.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -357,10 +357,10 @@ export default function Leagues() {
                                                                 (p.username || '?')[0].toUpperCase()
                                                             )}
                                                         </div>
-                                                        {p.display_name || p.username}
+                                                        <span className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>{p.display_name || p.username}</span>
                                                     </Link>
                                                 ) : (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
                                                         <div className="nav-avatar" style={{ width: 56, height: 56, fontSize: '1.3rem', overflow: 'hidden' }}>
                                                             {p.avatar_url ? (
                                                                 <img src={p.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -368,11 +368,11 @@ export default function Leagues() {
                                                                 (p.username || '?')[0].toUpperCase()
                                                             )}
                                                         </div>
-                                                        {p.display_name || p.username}
+                                                        <span className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>{p.display_name || p.username}</span>
                                                     </div>
                                                 )}
                                             </td>
-                                            <td style={{ fontWeight: 600 }}>{p.total_points}</td>
+                                            <td style={{ fontWeight: 600, textAlign: 'right' }}>{p.total_points}</td>
                                         </tr>
                                     ))}
                                     {globalRanking.length === 0 && (
@@ -411,7 +411,7 @@ export default function Leagues() {
                             <div className="table-container">
                                 <table>
                                     <thead>
-                                        <tr><th style={{ width: 40 }}>#</th><th style={{ width: 60 }}>Trend</th><th>Speler</th><th>Punten</th></tr>
+                                        <tr><th style={{ width: 40 }}>#</th><th style={{ width: 60 }}>Trend</th><th>Speler</th><th style={{ textAlign: 'right' }}>Punten</th></tr>
                                     </thead>
                                     <tbody>
                                         {leagueRanking.map((p, i) => (
@@ -424,7 +424,7 @@ export default function Leagues() {
                                                 </td>
                                                 <td>
                                                     {lastRaceId ? (
-                                                        <Link to={`/results/${lastRaceId}/player/${p.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit' }} className="hover-opacity">
+                                                        <Link to={`/results/${lastRaceId}/player/${p.id}`} style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit', overflow: 'hidden' }} className="hover-opacity">
                                                             <div className="nav-avatar" style={{ width: 56, height: 56, fontSize: '1.3rem', overflow: 'hidden' }}>
                                                                 {p.avatar_url ? (
                                                                     <img src={p.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -432,10 +432,10 @@ export default function Leagues() {
                                                                     (p.username || '?')[0].toUpperCase()
                                                                 )}
                                                             </div>
-                                                            {p.display_name || p.username}
+                                                            <span className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>{p.display_name || p.username}</span>
                                                         </Link>
                                                     ) : (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
                                                             <div className="nav-avatar" style={{ width: 56, height: 56, fontSize: '1.3rem', overflow: 'hidden' }}>
                                                                 {p.avatar_url ? (
                                                                     <img src={p.avatar_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -443,11 +443,11 @@ export default function Leagues() {
                                                                     (p.username || '?')[0].toUpperCase()
                                                                 )}
                                                             </div>
-                                                            {p.display_name || p.username}
+                                                            <span className="text-ellipsis" style={{ flex: 1, minWidth: 0 }}>{p.display_name || p.username}</span>
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td style={{ fontWeight: 600 }}>{p.total_points}</td>
+                                                <td style={{ fontWeight: 600, textAlign: 'right' }}>{p.total_points}</td>
                                             </tr>
                                         ))}
                                     </tbody>

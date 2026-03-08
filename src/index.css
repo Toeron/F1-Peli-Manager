@@ -147,10 +147,6 @@ select {
   transition: background 0.2s;
 }
 
-.nav-user:hover {
-  background: var(--bg-card-hover);
-}
-
 .nav-avatar {
   width: 32px;
   height: 32px;
@@ -162,6 +158,15 @@ select {
   font-weight: 700;
   font-size: 0.8rem;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 480px) {
+  .nav-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.75rem !important;
+  }
 }
 
 /* Mobile nav */
@@ -520,11 +525,26 @@ select {
   margin-bottom: 20px;
 }
 
+@media (max-width: 600px) {
+  .table-container {
+    margin-left: -12px;
+    margin-right: -12px;
+    width: calc(100% + 24px);
+    padding: 0 12px;
+  }
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   min-width: 500px;
-  /* Prevent columns from collapsing too much on mobile */
+  /* Prevent columns from collapsing too much on desktop */
+}
+
+@media (max-width: 600px) {
+  table {
+    min-width: 100%;
+  }
 }
 
 th {
@@ -541,6 +561,22 @@ td {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+
+  th,
+  td {
+    padding: 12px 8px;
+  }
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 tr:hover td {
@@ -1173,5 +1209,32 @@ tr.highlight td {
 
   .results-podium-slot {
     max-width: 120px;
+  }
+}
+
+/* ====== PULSING BUTTONS ====== */
+.btn-pulse-green {
+  background: var(--green) !important;
+  color: white !important;
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 0 rgba(0, 210, 106, 0.7);
+  animation: pulse-green 2s infinite;
+  font-weight: 700 !important;
+}
+
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 210, 106, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(0, 210, 106, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(0, 210, 106, 0);
   }
 }
