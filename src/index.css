@@ -1083,20 +1083,25 @@ tr.highlight td {
 /* ====== PREDICTION SECTION TABS ====== */
 .session-tabs {
   display: flex;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 8px 4px;
   margin-bottom: 20px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 4px;
+  padding-bottom: 8px;
+  justify-content: center;
 }
 
 .session-tab {
-  padding: 10px 20px;
+  padding: 10px 16px;
   background: none;
   color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.9rem;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-radius: var(--radius-sm);
   transition: all 0.2s;
+  flex: 1 1 auto;
+  text-align: center;
+  border-bottom: 2px solid transparent;
 }
 
 .session-tab:hover {
@@ -1107,6 +1112,15 @@ tr.highlight td {
   color: var(--text-primary);
   background: var(--bg-card);
   border-bottom: 2px solid var(--red);
+}
+
+@media (max-width: 480px) {
+  .session-tab {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 100px;
+  }
 }
 
 /* ====== DRIVER PICKER MODAL ====== */

@@ -100,10 +100,10 @@ export default function PredictionWizard() {
     const tabs = [
         { id: 'team', label: '🏎️ Team' },
         ...(race?.is_sprint_weekend ? [
-            { id: 'sprint_qualifying', label: '🏁 Kwali Sprint' },
-            { id: 'sprint', label: '⚡ Sprint' }
+            { id: 'sprint_qualifying', label: '🏁 Kwalificatie Sprint' },
+            { id: 'sprint', label: '⚡ Sprintrace' }
         ] : []),
-        { id: 'qualifying', label: '🏁 Kwalificatie' },
+        { id: 'qualifying', label: '🏁 Kwalificatie Hoofdrace' },
         { id: 'race', label: '🏆 Hoofdrace' }
     ]
 

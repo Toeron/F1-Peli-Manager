@@ -49,8 +49,11 @@ export default function RaceOverview() {
     if (loading) return <div className="loading"><div className="spinner"></div></div>
 
     const sessions = [
-        { key: 'qualifying', label: '🏁 Kwalificatie', icon: '🏁' },
-        ...(race?.is_sprint_weekend ? [{ key: 'sprint', label: '⚡ Sprint', icon: '⚡' }] : []),
+        ...(race?.is_sprint_weekend ? [
+            { key: 'sprint_qualifying', label: '🏁 Kwalificatie Sprint', icon: '🏁' },
+            { key: 'sprint', label: '⚡ Sprintrace', icon: '⚡' }
+        ] : []),
+        { key: 'qualifying', label: '🏁 Kwalificatie Hoofdrace', icon: '🏁' },
         { key: 'race', label: '🏆 Hoofdrace', icon: '🏆' },
     ]
 
