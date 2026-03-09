@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { DriverAvatar } from '../components/DriverAvatar'
 import Flag from '../components/Flag'
-import { getTeamPointsForDriver, getPredictionPoints, getPredictionMatch } from '../utils/scoring'
+import { getTeamPointsForDriver, getPredictionPoints, getPredictionMatch, getSynergyMultiplier, getPredictionDetails } from '../utils/scoring'
 
 export default function PlayerOverview() {
     const { raceId, userId } = useParams()
@@ -90,10 +90,17 @@ export default function PlayerOverview() {
     function getPredictionPointsDisplay(session, driverId) {
         if (!raceResults[session]) return null
         const pos = getDriverPosition(session, driverId)
-        if (!pos) return { pts: 0, label: null }
+        if (!pos) return null
+
+        const details = getPredictionDetails(session, pos, driverId, predictions)
+        const match = getPredictionMatch(session, pos, driverId, predictions)
+
+        if (!details) return { pts: 0, match: null, text: '' }
+
         return {
-            pts: getPredictionPoints(session, pos, driverId, predictions),
-            match: getPredictionMatch(session, pos, driverId, predictions)
+            pts: details.pts,
+            match: match,
+            text: details.text
         }
     }
 
@@ -101,50 +108,57 @@ export default function PlayerOverview() {
         const breakdown = []
         const tDrivers = teamDrivers.map(d => d.id)
 
-        // Team points
-        teamDrivers.forEach(d => {
-            sessions.forEach(sess => {
+        sessions.forEach(sess => {
+            const sessionPoints = []
+
+            // Team points for this session
+            teamDrivers.forEach(d => {
                 const pos = getDriverPosition(sess.key, d.id)
                 if (pos) {
                     const pts = getTeamPointsForDriver(sess.key, pos, d.id, tDrivers, predictions)
                     if (pts > 0) {
-                        breakdown.push({ category: 'Team', detail: `${d.last_name} (${sess.label})`, pts })
+                        const syn = getSynergyMultiplier(sess.key, pos, d.id, tDrivers, predictions)
+                        const synText = syn > 1 ? ` (⚡ Synergy ${syn}x)` : ''
+                        sessionPoints.push({ category: 'Team', detail: `${d.last_name}${synText}`, pts })
                     }
                 }
             })
-        })
 
-        // Prediction points
-        sessions.forEach(sess => {
+            // Prediction points for this session
             const pred = predictions[sess.key]
             if (pred) {
                 const pIds = [pred.p1_driver_id, pred.p2_driver_id, pred.p3_driver_id].filter(Boolean)
                 pIds.forEach(id => {
                     const pos = getDriverPosition(sess.key, id)
                     if (pos) {
-                        const pts = getPredictionPoints(sess.key, pos, id, predictions)
-                        if (pts > 0) {
+                        const details = getPredictionDetails(sess.key, pos, id, predictions)
+                        if (details && details.pts > 0) {
                             const d = getDriver(id)
-                            breakdown.push({ category: 'Voorspelling', detail: `${d?.last_name} (${sess.label})`, pts })
+                            sessionPoints.push({ category: 'Voorspelling', detail: `${d?.last_name || ''} - ${details.text}`, pts: details.pts })
                         }
                     }
                 })
             }
-        })
 
-        // Race bonuses
-        if (predictions['race'] && race) {
-            const pred = predictions['race']
-            if (race.fastest_lap_driver_id && pred.fastest_lap_driver_id === race.fastest_lap_driver_id) {
-                breakdown.push({ category: 'Bonus', detail: 'Snelste Ronde', pts: 5 })
+            // Race bonuses
+            if (sess.key === 'race' && predictions['race'] && race) {
+                const racePred = predictions['race']
+                if (race.fastest_lap_driver_id && racePred.fastest_lap_driver_id === race.fastest_lap_driver_id) {
+                    sessionPoints.push({ category: 'Bonus', detail: 'Snelste Ronde', pts: 5 })
+                }
+                if (race.safety_car !== null && racePred.safety_car === race.safety_car) {
+                    sessionPoints.push({ category: 'Bonus', detail: 'Safety Car', pts: 2 })
+                }
+                if (race.dnfs !== null && racePred.dnfs === race.dnfs) {
+                    sessionPoints.push({ category: 'Bonus', detail: 'Aantal DNF\'s', pts: 5 })
+                }
             }
-            if (race.safety_car !== null && pred.safety_car === race.safety_car) {
-                breakdown.push({ category: 'Bonus', detail: 'Safety Car', pts: 2 })
+
+            if (sessionPoints.length > 0) {
+                breakdown.push({ isHeader: true, label: sess.label })
+                breakdown.push(...sessionPoints)
             }
-            if (race.dnfs !== null && pred.dnfs === race.dnfs) {
-                breakdown.push({ category: 'Bonus', detail: 'Aantal DNF\'s', pts: 5 })
-            }
-        }
+        })
 
         return breakdown
     }
@@ -315,8 +329,8 @@ export default function PlayerOverview() {
                                                     return (
                                                         <div style={{ marginTop: 4 }}>
                                                             <div style={{ fontSize: '0.7rem', fontWeight: 800, color: res.pts > 0 ? '#00d26a' : 'var(--text-muted)' }}>+{res.pts}</div>
-                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 Exact</div>}
-                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ Bijna</div>}
+                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 {res.text}</div>}
+                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ {res.text}</div>}
                                                         </div>
                                                     )
                                                 })()}
@@ -337,8 +351,8 @@ export default function PlayerOverview() {
                                                     return (
                                                         <div style={{ marginTop: 4 }}>
                                                             <div style={{ fontSize: '0.7rem', fontWeight: 800, color: res.pts > 0 ? '#00d26a' : 'var(--text-muted)' }}>+{res.pts}</div>
-                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 Exact</div>}
-                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ Bijna</div>}
+                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 {res.text}</div>}
+                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ {res.text}</div>}
                                                         </div>
                                                     )
                                                 })()}
@@ -359,8 +373,8 @@ export default function PlayerOverview() {
                                                     return (
                                                         <div style={{ marginTop: 4 }}>
                                                             <div style={{ fontSize: '0.7rem', fontWeight: 800, color: res.pts > 0 ? '#00d26a' : 'var(--text-muted)' }}>+{res.pts}</div>
-                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 Exact</div>}
-                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ Bijna</div>}
+                                                            {res.match === 'exact' && <div style={{ fontSize: '0.6rem', color: '#00d26a' }}>🎯 {res.text}</div>}
+                                                            {res.match === 'close' && <div style={{ fontSize: '0.6rem', color: '#f5a623' }}>≈ {res.text}</div>}
                                                         </div>
                                                     )
                                                 })()}
@@ -426,17 +440,25 @@ export default function PlayerOverview() {
                                 </thead>
                                 <tbody>
                                     {scoreBreakdown.map((item, idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                            <td style={{ padding: '10px 16px', fontSize: '0.85rem' }}>
-                                                <span className={`badge badge-${item.category.toLowerCase()}`} style={{ fontSize: '0.7rem' }}>
-                                                    {item.category}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '10px 16px', fontSize: '0.9rem' }}>{item.detail}</td>
-                                            <td style={{ padding: '10px 16px', fontSize: '0.9rem', fontWeight: 700, textAlign: 'right', color: 'var(--green)' }}>
-                                                +{item.pts}
-                                            </td>
-                                        </tr>
+                                        item.isHeader ? (
+                                            <tr key={`header-${idx}`} style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border)' }}>
+                                                <td colSpan="3" style={{ padding: '8px 16px', fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                    {item.label}
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            <tr key={`item-${idx}`} style={{ borderBottom: '1px solid var(--border)' }}>
+                                                <td style={{ padding: '10px 16px', fontSize: '0.85rem', width: '120px' }}>
+                                                    <span className={`badge badge-${item.category.toLowerCase()}`} style={{ fontSize: '0.7rem' }}>
+                                                        {item.category}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '10px 16px', fontSize: '0.9rem' }}>{item.detail}</td>
+                                                <td style={{ padding: '10px 16px', fontSize: '0.9rem', fontWeight: 700, textAlign: 'right', color: 'var(--green)' }}>
+                                                    +{item.pts}
+                                                </td>
+                                            </tr>
+                                        )
                                     ))}
                                     {scoreBreakdown.length === 0 && (
                                         <tr>

@@ -33,23 +33,43 @@ Je start het seizoen met een vast budget van **$100 Miljoen**. Hiermee koop je 4
 ---
 
 ### 🎯 2. Voorspellingen (Top 3)
-Naast je vaste team, voorspel je voor elke sessie de exacte **Top 3**. Hoe dichter je bij de daadwerkelijke uitslag zit, hoe meer punten van de 'basisscore' (waarde van die positie) je krijgt:
-- 🟢 **100% (Exacte match)**: Je voorspelt Verstappen op P1 en hij wordt P1. Je krijgt de volle 25 punten.
+Voor elke sessie (Kwalificatie, Sprint, Race) voorspel je de exacte **Top 3**. Je scoort punten per coureur, afhankelijk van hoe dicht jouw voorspelling bij de *werkelijke eindpositie* van die coureur ligt. 
+
+De punten die je krijgt zijn altijd een percentage van de puntenwaarde die hoort bij de **werkelijke finish positie** van die coureur:
+- 🟢 **100% (Exacte match)**: Je voorspelt Verstappen op P1 en hij wordt P1. Je krijgt de volle 100% van de P1-punten (25 pnt).
 - 🔵 **50% (1 plek ernaast)**: Je voorspelt Verstappen op P1, maar hij wordt P2. Je krijgt 50% van de P2-punten (9 pnt).
-- ⚪ **25% (2 plekken ernaast)**: Je voorspelt Verstappen op P1, en hij wordt P3. Je krijgt 25% van de P3-punten (3.75 pnt).
+- ⚪ **25% (2 plekken ernaast)**: Je voorspelt Verstappen op P1, en hij wordt P3. Je krijgt 25% van de P3-punten (3.75 afgerond naar 4 pnt).
+- ❌ **Verder er vandaan (>2 plekken) of buiten Top 3**: Voorspel je Hamilton op P1, maar hij wordt P4 of lager (of valt uit)? Dan krijg je voor deze voorspelling **0 punten**.
+
+*(Let op: Bovenstaande bedragen gelden voor de Race. In de Kwalificatie of Sprintrace scoor je een percentage van de punten die gelden voor die specifieke sessie).*
 
 ---
 
-### ⚡ 3. Synergy Bonus (De Gamechanger)
-Dit is de ultieme boost! Als een coureur die je **in je Team** hebt gekocht, óók voorkomt **in je Voorspelling**, worden de resultaat-punten van die coureur vermenigvuldigd!
+### 🌟 3. Extra Race Bonussen
+Speciaal voor de **Race** sessie verdien je ook extra punten door het correct voorspellen van de volgende overige variabelen (deze punten staan los van je Team of Top 3 coureurs):
+- **Snelste Ronde (Fastest Lap)**: +5 punten bij juiste coureur.
+- **Safety Car**: +2 punten bij correct 'Ja/Nee'.
+- **Aantal DNF's (Gecrasht/Uitgevallen)**: +5 punten bij exact het juiste aantal.
 
-| Nauwkeurigheid | Vermenigvuldiger |
+---
+
+### ⚡ 4. Synergy Bonus (De Gamechanger)
+Dit is de ultieme boost! Als een coureur die je **in je Team** hebt gekocht, door jou **in je Voorspelling** is gezet én daadwerkelijk in de Top 3 eindigt, worden de basisscore-punten die deze coureur *voor jouw Team* heeft gescoord vermenigvuldigd!
+
+De vermenigvuldiger wordt groter naarmate je voorspelling dichterbij zat:
+
+| Afwijking Voorspelling | Vermenigvuldiger |
 | :--- | :---: |
-| Exacte Match | **x 2.0** |
-| 1 plek ernaast | **x 1.5** |
-| 2 plekken ernaast | **x 1.25** |
+| **Exacte Match** (0 plekken ernaast) | **x 2.0** |
+| **1 plek ernaast** | **x 1.5** |
+| **2 plekken ernaast** | **x 1.25** |
 
-> **💡 Voorbeeld:** Je hebt Verstappen in je team gekocht én je voorspelt hem op P1. Hij wint daadwerkelijk de race (25 pnt). Door de **x2.0 Synergy bonus** krijgt je team geen 25, maar direct **50 punten** voor Verstappen!
+> **💡 Rekenvoorbeeld Synergy:** 
+> - Je hebt Verstappen **in je Team**.
+> - Je voorspelt hem op **P2** voor de race.
+> - Hij wint de race daadwerkelijk en finisht op **P1** (Team punten normaal: 25 pnt).
+> - Je zat er 1 plek naast, dus je krijgt hiervoor de **x1.5 Synergy bonus**!
+> - Jouw team krijgt voor Verstappen in de race geen 25 punten, maar **25 x 1.5 = 38 (afgerond)** punten!
 
 ---
 

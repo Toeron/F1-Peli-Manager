@@ -68,7 +68,7 @@ export default function ScoringRules() {
                             </li>
                         </ul>
                         <p style={{ fontSize: '0.8rem', marginTop: 12, opacity: 0.7 }}>
-                            De basispunten voor een voorspelling (bij 100% match) zijn gelijk aan de punten die de coureur in die sessie zou verdienen (bijvoorbeeld 25 pnt voor P1 in de race).
+                            De punten die je krijgt zijn altijd een percentage van de puntenwaarde die hoort bij de <strong>werkelijke finish positie</strong> van die coureur. Zit je er verder dan 2 plekken naast of finisht de coureur buiten de Top 3? Dan scoor je 0 punten.
                         </p>
 
                         <div style={{ marginTop: 20, background: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 8, border: '1px solid var(--border)' }}>
@@ -101,8 +101,8 @@ export default function ScoringRules() {
                             </div>
                         </div>
                         <p style={{ fontSize: '0.85rem', marginTop: 12, background: 'rgba(255,255,255,0.05)', padding: 10, borderRadius: 8 }}>
-                            <strong>Voorbeeld:</strong> Je hebt Verstappen in je team en voorspelt hem op P1. Hij wint de race (25 pnt).
-                            Door de 2.0x Synergy bonus krijgt je team niet 25, maar <strong>50 teampunten</strong> voor Verstappen!
+                            <strong>Rekenvoorbeeld:</strong> Je hebt Verstappen in je team en voorspelt hem op P2. Hij wint de race daadwerkelijk (P1 krijgt 25 team punten).
+                            Je voorspelling was 1 plek ernaast, dus de 1.5x Synergy multiplier is actief. Je team scoort hierdoor <strong>25 x 1.5 = 38 punten</strong> (afgerond) voor Verstappen!
                         </p>
                     </section>
 
