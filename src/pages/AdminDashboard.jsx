@@ -38,7 +38,7 @@ export default function AdminDashboard() {
         setConstructors(constructorData || [])
 
         const { data: profilesData } = await supabase
-            .from('profiles').select('*').order('created_at', { ascending: false })
+            .from('profiles').select('*, player_email').order('created_at', { ascending: false })
         setPlayers(profilesData || [])
 
         setLoading(false)
@@ -369,6 +369,32 @@ export default function AdminDashboard() {
             addLog(`❌ Fout bij verwijderen speler: ${error.message}`)
         } else {
             addLog(`✅ Speler ${playerName} definitief verwijderd.`)
+            await loadData()
+        }
+        setSaving(false)
+    }
+
+    async function handleToggleAdmin(playerId, currentStatus, playerName) {
+        if (playerId === profile.id) {
+            addLog("⚠️ Je kunt je eigen admin-rechten niet intrekken.")
+            return
+        }
+
+        const action = currentStatus ? 'intrekken' : 'toekennen'
+        if (!window.confirm(`Weet je zeker dat je de admin-rechten van "${playerName}" wilt ${action}?`)) return
+
+        setSaving(true)
+        addLog(`Admin-rechten ${action} voor ${playerName}...`)
+
+        const { error } = await supabase.rpc('update_profile_by_admin', {
+            user_id_to_update: playerId,
+            is_admin_status: !currentStatus
+        })
+
+        if (error) {
+            addLog(`❌ Fout bij bijwerken admin-status: ${error.message}`)
+        } else {
+            addLog(`✅ Admin-rechten voor ${playerName} ${currentStatus ? 'ingetrokken' : 'toegekend'}.`)
             await loadData()
         }
         setSaving(false)
@@ -774,7 +800,7 @@ export default function AdminDashboard() {
                                 <thead>
                                     <tr>
                                         <th>Speler</th>
-                                        <th>Username</th>
+                                        <th>Email</th>
                                         <th>Punten / Budget</th>
                                         <th>Admin</th>
                                         <th style={{ textAlign: 'right' }}>Acties</th>
@@ -796,13 +822,18 @@ export default function AdminDashboard() {
                                                     {p.id === profile.id && <span style={{ fontSize: '0.65rem', color: 'var(--green)', marginLeft: 8 }}>(Jijzelf)</span>}
                                                 </div>
                                             </td>
-                                            <td>@{p.username}</td>
+                                            <td style={{ fontSize: '0.85rem' }}>{p.player_email || p.email || '-'}</td>
                                             <td>
                                                 <div style={{ color: 'var(--gold)', fontWeight: 600 }}>{p.total_points} pnt</div>
                                                 <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{formatPrice(p.budget)}</div>
                                             </td>
                                             <td>
-                                                {p.is_admin ? <span style={{ color: 'var(--green)' }}>✓</span> : <span style={{ opacity: 0.3 }}>-</span>}
+                                                <input
+                                                    type="checkbox"
+                                                    checked={p.is_admin}
+                                                    onChange={() => handleToggleAdmin(p.id, p.is_admin, p.display_name || p.username)}
+                                                    disabled={saving || p.id === profile.id}
+                                                />
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <button
