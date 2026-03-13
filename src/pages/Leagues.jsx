@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -37,31 +37,143 @@ function TrendIndicator({ trend, diff }) {
 }
 
 function CamelTrack({ players }) {
+    const [isRacing, setIsRacing] = useState(false);
+    const [racePhase, setRacePhase] = useState('idle'); // 'idle' | 'start' | 'racing' | 'finished'
+    const audioRef = useRef(null);
+    const timeoutRef = useRef(null);
+    const startTimeoutRef = useRef(null);
+
+    // Generate stable random durations per player for the race
+    const raceDurationsRef = useRef([]);
+
+    const startRace = useCallback(() => {
+        if (isRacing) return;
+
+        // Generate random durations between 17.5s and 19s for each player
+        raceDurationsRef.current = (players || []).slice(0, 5).map(() =>
+            17.5 + Math.random() * 1.5
+        );
+
+        setIsRacing(true);
+        setRacePhase('start');
+
+        // Play audio
+        try {
+            audioRef.current = new Audio('/audio/kamelenrace.mp3');
+            audioRef.current.volume = 0.7;
+            audioRef.current.play().catch(() => {});
+        } catch (e) {
+            // Audio might not be available, continue with animation only
+        }
+
+        // After a brief moment, start the actual race animation
+        // Need enough time for browser to paint the 'start' position before enabling transitions
+        startTimeoutRef.current = setTimeout(() => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setRacePhase('racing');
+                });
+            });
+        }, 200);
+
+        // After 19 seconds, race is done
+        timeoutRef.current = setTimeout(() => {
+            setRacePhase('finished');
+            setTimeout(() => {
+                setIsRacing(false);
+                setRacePhase('idle');
+            }, 500);
+        }, 19000);
+    }, [isRacing, players]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            if (startTimeoutRef.current) clearTimeout(startTimeoutRef.current);
+        };
+    }, []);
+
     if (!players || players.length < 2) return null;
     const trackPlayers = [...players].slice(0, 5); // top 5 looks best on mobile
     const maxPoints = trackPlayers[0].total_points;
-    const minPoints = Math.max(0, trackPlayers[trackPlayers.length - 1].total_points - 20); // Give a bit of margin behind the last player
+    const minPoints = Math.max(0, trackPlayers[trackPlayers.length - 1].total_points - 20);
 
     const range = Math.max(1, maxPoints - minPoints);
 
-    // Group players by exact score to fan them out cleanly
-    const groupedPlayers = trackPlayers.reduce((acc, p) => {
-        if (!acc[p.total_points]) acc[p.total_points] = [];
-        acc[p.total_points].push(p);
-        return acc;
-    }, {});
-
     return (
         <div style={{ marginBottom: 32, padding: '0 4px' }}>
-            <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 16, letterSpacing: '1px' }}>Koplopers (Top 5) & Puntenverschil</h3>
-            <div style={{ position: 'relative', width: '100%', height: 110, background: 'linear-gradient(90deg, rgba(255,255,255,0.01) 0%, rgba(255,255,255,0.04) 100%)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)' }}>
+            <h3
+                onClick={startRace}
+                style={{
+                    fontSize: '0.8rem',
+                    textTransform: 'uppercase',
+                    color: isRacing ? 'var(--gold)' : 'var(--text-muted)',
+                    marginBottom: 16,
+                    letterSpacing: '1px',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    transition: 'color 0.3s ease',
+                    ...(isRacing ? {
+                        animation: 'camelTitlePulse 0.6s ease-in-out infinite alternate',
+                        textShadow: '0 0 8px rgba(255,200,0,0.4)',
+                    } : {})
+                }}
+            >
+                {isRacing ? '🐪 KAMELENRACE! 🐪' : 'Koplopers (Top 5) & Puntenverschil'}
+            </h3>
+            <div style={{
+                position: 'relative',
+                width: '100%',
+                height: 110,
+                background: isRacing
+                    ? 'linear-gradient(90deg, rgba(194,154,55,0.08) 0%, rgba(194,154,55,0.15) 100%)'
+                    : 'linear-gradient(90deg, rgba(255,255,255,0.01) 0%, rgba(255,255,255,0.04) 100%)',
+                borderRadius: 12,
+                border: `1px solid ${isRacing ? 'rgba(194,154,55,0.2)' : 'rgba(255,255,255,0.05)'}`,
+                boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.2)',
+                transition: 'background 0.5s ease, border-color 0.5s ease',
+            }}>
+                {/* Dust cloud animation during race */}
+                {isRacing && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        overflow: 'hidden',
+                        borderRadius: 12,
+                        pointerEvents: 'none',
+                        zIndex: 0,
+                    }}>
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            background: 'repeating-linear-gradient(90deg, transparent, rgba(194,154,55,0.03) 20%, transparent 40%)',
+                            animation: 'camelDust 2s linear infinite',
+                        }} />
+                    </div>
+                )}
+
                 {/* Finish line */}
-                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, background: 'repeating-linear-gradient(45deg, #fff, #fff 4px, #000 4px, #000 8px)', borderTopRightRadius: 11, borderBottomRightRadius: 11, opacity: 0.6 }} />
+                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 6, background: 'repeating-linear-gradient(45deg, #fff, #fff 4px, #000 4px, #000 8px)', borderTopRightRadius: 11, borderBottomRightRadius: 11, opacity: 0.6, zIndex: 1 }} />
+
+                {/* Start line - only visible during race */}
+                {isRacing && (
+                    <div style={{
+                        position: 'absolute', left: 24, top: 0, bottom: 0, width: 3,
+                        background: 'rgba(255,255,255,0.3)',
+                        borderRadius: 2,
+                        zIndex: 1,
+                    }} />
+                )}
 
                 {trackPlayers.map((p, globalIndex) => {
                     const percentage = Math.max(0, Math.min(100, ((p.total_points - minPoints) / range) * 100));
 
-                    // Fixed staggering offsets based on RANK to avoid overlap even if scores are close
+                    // Fixed staggering offsets based on RANK to avoid overlap
                     const fanOffsets = [
                         { x: 0, y: -25 },  // P1: Up
                         { x: -5, y: 25 },  // P2: Down
@@ -71,25 +183,46 @@ function CamelTrack({ players }) {
                     ];
                     const offset = fanOffsets[globalIndex % 5];
 
+                    // Determine the left position based on race phase
+                    const isAtStart = racePhase === 'start';
+                    const isMoving = racePhase === 'racing' || racePhase === 'finished';
+                    const raceDuration = raceDurationsRef.current[globalIndex] || 18;
+
+                    const leftValue = isAtStart
+                        ? '10px' // All bunched at the very start
+                        : `calc(30px + (100% - 60px) * ${percentage / 100} + ${offset.x}px)`;
+
+                    // Transition: none during start (instant snap), 19s during race, 1s normally
+                    const transitionValue = isAtStart
+                        ? 'none'
+                        : isMoving
+                            ? `all ${raceDuration}s cubic-bezier(0.16, 0.9, 0.4, 1)`
+                            : 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)';
+
                     return (
                         <div key={p.id} style={{
                             position: 'absolute',
-                            left: `calc(30px + (100% - 60px) * ${percentage / 100} + ${offset.x}px)`,
-                            top: `calc(50% + ${offset.y}px)`,
+                            left: leftValue,
+                            top: `calc(50% + ${isAtStart ? 0 : offset.y}px)`,
                             transform: 'translate(-50%, -50%)',
-                            transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            zIndex: 20 - globalIndex, // P1 is always on top visually
+                            transition: transitionValue,
+                            zIndex: 20 - globalIndex,
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center'
                         }}>
                             <div className="nav-avatar" style={{
-                                width: 40, height: 40, border: `3px solid ${globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)'}`,
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                width: 40, height: 40,
+                                border: `3px solid ${globalIndex === 0 ? 'var(--gold)' : globalIndex === 1 ? 'var(--silver)' : globalIndex === 2 ? 'var(--bronze)' : 'var(--border)'}`,
+                                boxShadow: isRacing
+                                    ? `0 4px 16px rgba(0,0,0,0.5), 0 0 12px ${globalIndex === 0 ? 'rgba(255,200,0,0.3)' : 'rgba(255,255,255,0.1)'}`
+                                    : '0 4px 12px rgba(0,0,0,0.5)',
                                 overflow: 'hidden',
                                 background: 'var(--bg-elevated)',
                                 fontSize: '1.2rem',
-                                padding: 0
+                                padding: 0,
+                                transition: 'box-shadow 0.5s ease',
+                                ...(isRacing ? { animation: `camelBounce 0.3s ease-in-out infinite alternate ${globalIndex * 0.05}s` } : {}),
                             }}>
                                 {p.avatar_url ? (
                                     <img src={p.avatar_url} alt="Av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -119,6 +252,24 @@ function CamelTrack({ players }) {
                     )
                 })}
             </div>
+
+            {/* CSS Keyframes for race animations */}
+            {isRacing && (
+                <style>{`
+                    @keyframes camelTitlePulse {
+                        from { opacity: 0.8; transform: scale(1); }
+                        to { opacity: 1; transform: scale(1.03); }
+                    }
+                    @keyframes camelDust {
+                        from { transform: translateX(-100%); }
+                        to { transform: translateX(100%); }
+                    }
+                    @keyframes camelBounce {
+                        from { transform: translateY(0px); }
+                        to { transform: translateY(-2px); }
+                    }
+                `}</style>
+            )}
         </div>
     )
 }
