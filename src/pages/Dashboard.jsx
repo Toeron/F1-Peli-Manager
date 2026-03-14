@@ -81,6 +81,7 @@ export default function Dashboard() {
     const [accuracy, setAccuracy] = useState(null)
     const [rival, setRival] = useState(null)
     const [bestPrediction, setBestPrediction] = useState(null)
+    const [weekendTop3, setWeekendTop3] = useState(null)
 
 
     useEffect(() => { loadData() }, [profile])
@@ -172,7 +173,43 @@ export default function Dashboard() {
             lRanks.sort((a, b) => a.rank - b.rank)
             setLeagueRanks(lRanks)
 
-            // ── NEW: Load enhanced stats ────────────────────────────
+            // ── Weekend Top 3: league players from last completed race ──
+            const lastCompletedRace = past?.[0]
+            const showTop3 = lastCompletedRace && (
+                !races?.length ||
+                (new Date(races[0].lock_datetime) - new Date()) > 48 * 60 * 60 * 1000
+            )
+            if (showTop3 && myCustomLeagues.length > 0) {
+                // Get all league member user IDs (from first league)
+                const firstLeague = myCustomLeagues[0]
+                const { data: leagueMembers } = await supabase
+                    .from('league_members')
+                    .select('user_id')
+                    .eq('league_id', firstLeague.league_id)
+                const memberIds = leagueMembers?.map(m => m.user_id) || []
+
+                if (memberIds.length > 0) {
+                    const { data: raceScores } = await supabase
+                        .from('user_race_scores')
+                        .select('user_id, total_points, profiles(username, display_name, avatar_url)')
+                        .eq('race_id', lastCompletedRace.id)
+                        .in('user_id', memberIds)
+                        .order('total_points', { ascending: false })
+                        .limit(3)
+
+                    if (raceScores?.length > 0) {
+                        setWeekendTop3({
+                            race: lastCompletedRace,
+                            leagueName: firstLeague.leagues.name,
+                            players: raceScores
+                        })
+                    }
+                }
+            } else {
+                setWeekendTop3(null)
+            }
+
+            // ── Load enhanced stats ────────────────────────────
             await loadEnhancedStats(profile, past)
         }
 
@@ -503,6 +540,74 @@ export default function Dashboard() {
                                         ▶
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Weekend Top 3 - League podium */}
+                {weekendTop3 && (
+                    <div className="card" style={{
+                        marginBottom: 24,
+                        background: 'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,140,0,0.04) 50%, rgba(205,127,50,0.06) 100%)',
+                        border: '1px solid rgba(255,215,0,0.15)',
+                        textAlign: 'center',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}>
+                        {/* Subtle sparkle bg */}
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'radial-gradient(circle at 20% 50%, rgba(255,215,0,0.06) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(205,127,50,0.06) 0%, transparent 50%)', pointerEvents: 'none' }} />
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: 4 }}>
+                                🏆 {weekendTop3.leagueName}
+                            </div>
+                            <h2 style={{ margin: '0 0 4px', fontSize: '1.1rem', color: '#FFD700' }}>
+                                Top 3 — {weekendTop3.race.name}
+                            </h2>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>
+                                <Flag code={weekendTop3.race.circuits?.country_code} /> Ronde {weekendTop3.race.round}
+                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+                                {weekendTop3.players.map((p, i) => {
+                                    const medals = ['🥇', '🥈', '🥉']
+                                    const colors = ['#FFD700', '#C0C0C0', '#CD7F32']
+                                    const sizes = [56, 48, 48]
+                                    return (
+                                        <div key={p.user_id} style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                                            minWidth: 80, order: [1, 0, 2][i]
+                                        }}>
+                                            <div style={{ fontSize: '1.3rem' }}>{medals[i]}</div>
+                                            <div className="nav-avatar" style={{
+                                                width: sizes[i], height: sizes[i], fontSize: '1.2rem',
+                                                border: `3px solid ${colors[i]}`,
+                                                boxShadow: `0 4px 12px rgba(0,0,0,0.3), 0 0 8px ${colors[i]}33`,
+                                                overflow: 'hidden'
+                                            }}>
+                                                {p.profiles?.avatar_url ? (
+                                                    <img src={p.profiles.avatar_url} alt="Av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    (p.profiles?.display_name || p.profiles?.username || '?')[0].toUpperCase()
+                                                )}
+                                            </div>
+                                            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: colors[i] }}>
+                                                {p.profiles?.display_name || p.profiles?.username}
+                                            </div>
+                                            <div style={{
+                                                fontWeight: 800, fontSize: '1rem', color: 'var(--green)',
+                                                background: 'rgba(0,210,106,0.08)', borderRadius: 8,
+                                                padding: '2px 10px'
+                                            }}>
+                                                {p.total_points} <span style={{ fontSize: '0.6rem', fontWeight: 400, opacity: 0.7 }}>PNT</span>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            <div style={{ marginTop: 14 }}>
+                                <Link to={`/results/${weekendTop3.race.id}`} className="btn btn-secondary btn-small" style={{ borderColor: 'rgba(255,215,0,0.3)', color: '#FFD700', fontSize: '0.8rem' }}>
+                                    Bekijk volledige uitslag →
+                                </Link>
                             </div>
                         </div>
                     </div>

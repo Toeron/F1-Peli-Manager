@@ -19,13 +19,13 @@ export default function RaceResults() {
     const [activeTab, setActiveTab] = useState('race')
     const [loading, setLoading] = useState(true)
     const [myLeagues, setMyLeagues] = useState([])
-    const [selectedLeagueId, setSelectedLeagueId] = useState('global')
+    const [selectedLeagueId, setSelectedLeagueId] = useState(null)
     const [leagueMembers, setLeagueMembers] = useState(null)
 
     useEffect(() => { if (profile) loadData() }, [raceId, profile])
 
     useEffect(() => {
-        if (selectedLeagueId === 'global') {
+        if (!selectedLeagueId || selectedLeagueId === 'global') {
             setLeagueMembers(null)
             return
         }
@@ -77,6 +77,11 @@ export default function RaceResults() {
             ?.map(m => m.leagues)
             .filter(l => l && !l.is_global) || []
         setMyLeagues(leaguesList)
+
+        // Default to the player's first league, or 'global' if they have no leagues
+        if (selectedLeagueId === null) {
+            setSelectedLeagueId(leaguesList.length > 0 ? leaguesList[0].id : 'global')
+        }
 
         // Parse possible tab query param
         const queryParams = new URLSearchParams(window.location.search)
