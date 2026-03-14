@@ -354,13 +354,24 @@ export default function Leagues() {
             return
         }
         async function fetchLeagueRanking() {
+            // Fetch lastRaceId directly to avoid timing issues with state
+            const now = new Date().toISOString()
+            const { data: pastRaces } = await supabase
+                .from('races')
+                .select('id')
+                .eq('is_test', false)
+                .lte('lock_datetime', now)
+                .order('lock_datetime', { ascending: false })
+                .limit(1)
+            const raceId = pastRaces?.[0]?.id || null
+
             const { data } = await supabase
                 .from('profiles')
                 .select('id, username, display_name, total_points, budget, avatar_url, league_members!inner(league_id)')
                 .eq('league_members.league_id', selectedLeagueId)
                 .order('total_points', { ascending: false })
 
-            const rankingWithTrends = await calculateTrends(data || [], lastRaceId)
+            const rankingWithTrends = await calculateTrends(data || [], raceId)
             setLeagueRanking(rankingWithTrends)
         }
         fetchLeagueRanking()
