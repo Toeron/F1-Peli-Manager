@@ -92,6 +92,7 @@ export default function Dashboard() {
             .from('races')
             .select('*, circuits(*)')
             .eq('is_test', false)
+            .neq('status', 'cancelled')
             .gte('race_date', new Date().toISOString().split('T')[0])
             .order('race_date', { ascending: true })
             .limit(1)
@@ -498,7 +499,7 @@ export default function Dashboard() {
                                         onClick={() => setPastRaceIndex(prev => Math.min(prev + 1, allPastRaces.length - 1))}
                                         disabled={pastRaceIndex === allPastRaces.length - 1}
                                         className="btn-icon"
-                                        style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: pastRaceIndex === allPastRaces.length - 1 ? 'default' : 'pointer', opacity: pastRaceIndex === allPastRaces.length - 1 ? 0.3 : 1 }}
+                                        style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: pastRaceIndex === allPastRaces.length - 1 ? 'default' : 'pointer', opacity: pastRaceIndex === allPastRaces.length - 1 ? 0.3 : 1, color: '#fff', fontSize: '1rem' }}
                                     >
                                         ◀
                                     </button>
@@ -527,7 +528,7 @@ export default function Dashboard() {
                                         <span style={{ fontSize: '0.7rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: 4 }}>PNT</span>
                                     </div>
                                     <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 4 }}>
-                                        <Link to={`/results/${allPastRaces[pastRaceIndex].id}/player/${profile?.id}`} style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 700 }}>Mijn details →</Link>
+                                        <Link to={`/results/${allPastRaces[pastRaceIndex].id}/player/${profile?.id}`} style={{ fontSize: '0.75rem', color: 'var(--green)', fontWeight: 700 }}>Mijn details</Link>
                                     </div>
                                 </div>
                                 {allPastRaces.length > 1 && (
@@ -535,7 +536,7 @@ export default function Dashboard() {
                                         onClick={() => setPastRaceIndex(prev => Math.max(prev - 1, 0))}
                                         disabled={pastRaceIndex === 0}
                                         className="btn-icon"
-                                        style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: pastRaceIndex === 0 ? 'default' : 'pointer', opacity: pastRaceIndex === 0 ? 0.3 : 1 }}
+                                        style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: pastRaceIndex === 0 ? 'default' : 'pointer', opacity: pastRaceIndex === 0 ? 0.3 : 1, color: '#fff', fontSize: '1rem' }}
                                     >
                                         ▶
                                     </button>

@@ -330,6 +330,34 @@ export default function AdminDashboard() {
         setSaving(false)
     }
 
+    async function cancelRace() {
+        if (!window.confirm(`Weet je zeker dat je ${selectedRaceObj?.name} wilt annuleren? De race wordt gemarkeerd als geannuleerd.`)) return
+        setSaving(true)
+        addLog(`🚫 Race ${selectedRaceObj?.name} annuleren...`)
+        const { error } = await supabase.from('races').update({ status: 'cancelled' }).eq('id', selectedRace)
+        if (error) {
+            addLog(`❌ Fout: ${error.message}`)
+        } else {
+            addLog('✅ Race geannuleerd.')
+        }
+        await loadData()
+        setSaving(false)
+    }
+
+    async function reactivateRace() {
+        if (!window.confirm(`Weet je zeker dat je ${selectedRaceObj?.name} weer wilt activeren?`)) return
+        setSaving(true)
+        addLog(`♻️ Race ${selectedRaceObj?.name} heractiveren...`)
+        const { error } = await supabase.from('races').update({ status: 'open' }).eq('id', selectedRace)
+        if (error) {
+            addLog(`❌ Fout: ${error.message}`)
+        } else {
+            addLog('✅ Race weer geactiveerd.')
+        }
+        await loadData()
+        setSaving(false)
+    }
+
     async function saveCustomDeadline(newDateString) {
         if (!newDateString) return
         setSaving(true)
@@ -475,7 +503,7 @@ export default function AdminDashboard() {
                                 <select className="form-input" value={selectedRace} onChange={e => setSelectedRace(e.target.value)}>
                                     {races.map(r => (
                                         <option key={r.id} value={r.id}>
-                                            R{r.round} — {r.name} {r.status === 'completed' ? '✓' : ''}
+                                            R{r.round} — {r.name} {r.status === 'completed' ? '✓' : r.status === 'cancelled' ? '✗' : ''}
                                         </option>
                                     ))}
                                 </select>
@@ -673,6 +701,21 @@ export default function AdminDashboard() {
                                     onClick={resetRaceData} disabled={saving}>
                                     🧹 Reset Race Data
                                 </button>
+                            </div>
+
+                            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 12, marginTop: 20, textTransform: 'uppercase' }}>Race Annulering (FIA)</h4>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {selectedRaceObj?.status === 'cancelled' ? (
+                                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 12px', background: 'rgba(0, 210, 106, 0.1)', borderColor: 'var(--green)', color: 'var(--green)' }}
+                                        onClick={reactivateRace} disabled={saving}>
+                                        ♻️ Heractiveren
+                                    </button>
+                                ) : (
+                                    <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '8px 12px', background: 'rgba(255, 36, 66, 0.1)', borderColor: 'rgba(255, 36, 66, 0.3)', color: 'var(--red)' }}
+                                        onClick={cancelRace} disabled={saving || selectedRaceObj?.status === 'completed'}>
+                                        🚫 Race Annuleren
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </>

@@ -16,6 +16,7 @@ export default function ResultsOverview() {
             .from('races')
             .select('*, circuits(*)')
             .eq('is_test', false)
+            .neq('status', 'cancelled')
             .order('race_date', { ascending: true })
 
         setRaces(data || [])
