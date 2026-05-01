@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import LoginPage from './pages/LoginPage'
@@ -13,6 +13,7 @@ import PlayerOverview from './pages/PlayerOverview'
 import RaceResults from './pages/RaceResults'
 import ScoringRules from './pages/ScoringRules'
 import ResultsOverview from './pages/ResultsOverview'
+import ResetPassword from './pages/ResetPassword'
 
 function ProtectedRoute({ children }) {
     const { user, loading } = useAuth()
@@ -21,10 +22,21 @@ function ProtectedRoute({ children }) {
     return children
 }
 
+function CatchAllRoute() {
+    const location = useLocation()
+    if (location.pathname.includes('reset-password') || location.pathname.includes('auth/confirm')) {
+        return <Navigate to={`/reset-password${location.search}`} replace />
+    }
+    return <Navigate to="/login" replace />
+}
+
 function AppRoutes() {
     return (
         <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/auth/confirm" element={<ResetPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="*" element={<CatchAllRoute />} />
             <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="wizard/:raceId" element={<PredictionWizard />} />
