@@ -18,6 +18,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [raceExtras, setRaceExtras] = useState({ fastest_lap_driver_id: '', safety_car: false, dnfs: 0 })
+    const [announcement, setAnnouncement] = useState('')
 
     useEffect(() => { loadData() }, [])
 
@@ -40,6 +41,12 @@ export default function AdminDashboard() {
         const { data: profilesData } = await supabase
             .from('profiles').select('*, player_email').order('created_at', { ascending: false })
         setPlayers(profilesData || [])
+
+        const { data: settingsData } = await supabase
+            .from('app_settings').select('*').eq('id', 'global').maybeSingle()
+        if (settingsData && settingsData.announcement) {
+            setAnnouncement(settingsData.announcement)
+        }
 
         setLoading(false)
     }
@@ -466,6 +473,24 @@ export default function AdminDashboard() {
         setSaving(false)
     }
 
+    async function handleSaveAnnouncement() {
+        setSaving(true)
+        addLog(`Mededeling opslaan...`)
+        
+        const { error } = await supabase
+            .from('app_settings')
+            .upsert({ id: 'global', announcement: announcement || null })
+            
+        if (error) {
+            addLog(`❌ Fout bij opslaan mededeling: ${error.message}`)
+            alert('Fout bij opslaan mededeling')
+        } else {
+            addLog(`✅ Mededeling opgeslagen`)
+            alert('Mededeling opgeslagen')
+        }
+        setSaving(false)
+    }
+
     if (loading) return <div className="loading"><div className="spinner"></div></div>
 
     return (
@@ -488,10 +513,33 @@ export default function AdminDashboard() {
                     <button className={`session-tab ${tab === 'players' ? 'active' : ''}`} onClick={() => setTab('players')}>
                         👥 Spelers
                     </button>
+                    <button className={`session-tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>
+                        ⚙️ Instellingen
+                    </button>
                     <button className={`session-tab ${tab === 'log' ? 'active' : ''}`} onClick={() => setTab('log')}>
                         📋 Log
                     </button>
                 </div>
+
+                {/* ============= SETTINGS TAB ============= */}
+                {tab === 'settings' && (
+                    <div className="card" style={{ marginBottom: 24 }}>
+                        <h2>App Instellingen</h2>
+                        <div className="form-group" style={{ marginBottom: 16 }}>
+                            <label>Globale Mededeling (Wordt getoond aan alle gebruikers op het Dashboard)</label>
+                            <textarea 
+                                className="form-input" 
+                                rows={4} 
+                                placeholder="Typ hier de mededeling. Laat leeg om geen mededeling te tonen."
+                                value={announcement}
+                                onChange={e => setAnnouncement(e.target.value)}
+                            />
+                        </div>
+                        <button className="btn btn-primary" onClick={handleSaveAnnouncement} disabled={saving}>
+                            💾 Mededeling Opslaan
+                        </button>
+                    </div>
+                )}
 
                 {/* ============= RESULTS TAB ============= */}
                 {tab === 'results' && (

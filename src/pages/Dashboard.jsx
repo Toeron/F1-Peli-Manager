@@ -82,7 +82,7 @@ export default function Dashboard() {
     const [rival, setRival] = useState(null)
     const [bestPrediction, setBestPrediction] = useState(null)
     const [weekendTop3, setWeekendTop3] = useState(null)
-
+    const [announcement, setAnnouncement] = useState('')
 
     useEffect(() => { loadData() }, [profile])
 
@@ -98,6 +98,13 @@ export default function Dashboard() {
             .limit(1)
 
         if (races?.length) setNextRace(races[0])
+
+        // Get announcement
+        const { data: settingsData } = await supabase
+            .from('app_settings').select('*').eq('id', 'global').maybeSingle()
+        if (settingsData && settingsData.announcement) {
+            setAnnouncement(settingsData.announcement)
+        }
 
         // Get last completed races with results
         const { data: past } = await supabase
@@ -432,6 +439,18 @@ export default function Dashboard() {
                         <p>Welkom terug, {profile?.display_name || profile?.username}!</p>
                     </div>
                 </div>
+
+                {announcement && (
+                    <div className="card" style={{ marginBottom: 24, borderLeft: '4px solid var(--amber)', background: 'linear-gradient(135deg, rgba(245, 166, 35, 0.1), rgba(245, 166, 35, 0.02))' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                            <div style={{ fontSize: '1.5rem', marginTop: -4 }}>📢</div>
+                            <div>
+                                <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--amber)', margin: '0 0 6px 0', letterSpacing: '0.5px' }}>Mededeling van de beheerder</h3>
+                                <p style={{ margin: 0, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{announcement}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Stats overview */}
                 <div className="stats-row">
