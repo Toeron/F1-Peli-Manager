@@ -103,3 +103,28 @@ Gedreven door passie voor de sport en moderne webtechnologie:
 <div align="center">
   <i>Gereed voor de start? Lights out and away we go! 🚦</i>
 </div>
+
+---
+
+## 🔒 Supabase Database Guidelines
+
+Due to a breaking security change introduced by Supabase in mid-2026, newly created tables in the `public` schema do not automatically receive default privileges for client access. 
+
+When creating or modifying database tables, you **MUST** explicitly grant the required privileges to the `anon`, `authenticated`, and `service_role` database roles so they are reachable via the Data API (`supabase-js` client library).
+
+Always include the following statements in your schema/migration scripts:
+
+```sql
+-- 1. Grant the privileges the roles need
+GRANT SELECT ON public.your_new_table TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.your_new_table TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.your_new_table TO service_role;
+
+-- 2. Enable RLS (as standard)
+ALTER TABLE public.your_new_table ENABLE ROW LEVEL SECURITY;
+
+-- 3. Add your RLS policies
+CREATE POLICY "authenticated users can select" 
+  ON public.your_new_table FOR SELECT TO authenticated USING (true);
+```
+

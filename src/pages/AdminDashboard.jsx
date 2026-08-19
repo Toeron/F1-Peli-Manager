@@ -441,6 +441,7 @@ export default function AdminDashboard() {
 
 
     const [showAddForm, setShowAddForm] = useState(false)
+    const [editingDriver, setEditingDriver] = useState(null)
     const [newDriver, setNewDriver] = useState({
         first_name: '',
         last_name: '',
@@ -448,6 +449,7 @@ export default function AdminDashboard() {
         number: '',
         constructor_id: '',
         current_value: 10000000,
+        avatar_url: '',
         active: true
     })
 
@@ -467,7 +469,35 @@ export default function AdminDashboard() {
         } else {
             addLog(`✅ Coureur ${newDriver.last_name} toegevoegd!`)
             setShowAddForm(false)
-            setNewDriver({ first_name: '', last_name: '', abbreviation: '', number: '', constructor_id: '', current_value: 10000000, active: true })
+            setNewDriver({ first_name: '', last_name: '', abbreviation: '', number: '', constructor_id: '', current_value: 10000000, avatar_url: '', active: true })
+            await loadData()
+        }
+        setSaving(false)
+    }
+
+    async function handleSaveEditedDriver(e) {
+        e.preventDefault()
+        if (!editingDriver) return
+        setSaving(true)
+        const { error } = await supabase
+            .from('drivers')
+            .update({
+                first_name: editingDriver.first_name,
+                last_name: editingDriver.last_name,
+                abbreviation: editingDriver.abbreviation.toUpperCase(),
+                number: parseInt(editingDriver.number) || 0,
+                constructor_id: editingDriver.constructor_id || null,
+                current_value: parseInt(editingDriver.current_value) || 0,
+                avatar_url: editingDriver.avatar_url || null,
+                active: editingDriver.active
+            })
+            .eq('id', editingDriver.id)
+
+        if (error) {
+            addLog(`❌ Fout bij opslaan coureur: ${error.message}`)
+        } else {
+            addLog(`✅ Coureur ${editingDriver.first_name} ${editingDriver.last_name} bijgewerkt!`)
+            setEditingDriver(null)
             await loadData()
         }
         setSaving(false)
@@ -774,13 +804,14 @@ export default function AdminDashboard() {
                     <div className="card">
                         <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h2 style={{ fontSize: '1.2rem', margin: 0 }}>Beheer Coureurs</h2>
-                            <button className="btn btn-primary btn-small" onClick={() => setShowAddForm(!showAddForm)}>
+                            <button className="btn btn-primary btn-small" onClick={() => { setShowAddForm(!showAddForm); setEditingDriver(null); }}>
                                 {showAddForm ? '✕ Annuleren' : '➕ Rijder Toevoegen'}
                             </button>
                         </div>
 
                         {showAddForm && (
                             <form onSubmit={handleAddDriver} className="card" style={{ background: 'rgba(255,255,255,0.03)', marginBottom: 24, padding: 20, border: '1px solid var(--border)' }}>
+                                <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: '1rem' }}>➕ Nieuwe Coureur Toevoegen</h3>
                                 <div className="grid-3">
                                     <div className="form-group">
                                         <label>Voornaam</label>
@@ -809,12 +840,80 @@ export default function AdminDashboard() {
                                     </div>
                                     <div className="form-group">
                                         <label>Waarde ($)</label>
-                                        <input className="form-input" type="number" required value={newDriver.current_value} onChange={e => setNewDriver({ ...newDriver, current_value: parseInt(e.target.value) })} />
+                                        <input className="form-input" type="number" required value={newDriver.current_value} onChange={e => setNewDriver({ ...newDriver, current_value: parseInt(e.target.value) || 0 })} />
                                     </div>
+                                </div>
+                                <div className="form-group" style={{ marginTop: 12 }}>
+                                    <label>Avatar / Foto URL (Optioneel)</label>
+                                    <input className="form-input" placeholder="https://..." value={newDriver.avatar_url || ''} onChange={e => setNewDriver({ ...newDriver, avatar_url: e.target.value })} />
                                 </div>
                                 <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }} disabled={saving}>
                                     💾 Coureur Opslaan
                                 </button>
+                            </form>
+                        )}
+
+                        {editingDriver && (
+                            <form onSubmit={handleSaveEditedDriver} className="card" style={{ background: 'rgba(0, 210, 106, 0.05)', marginBottom: 24, padding: 20, border: '1px solid var(--green)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--green)' }}>
+                                        ✏️ Coureur Bewerken: {editingDriver.first_name} {editingDriver.last_name}
+                                    </h3>
+                                    <button type="button" className="btn btn-secondary btn-small" onClick={() => setEditingDriver(null)}>
+                                        ✕ Annuleren
+                                    </button>
+                                </div>
+                                <div className="grid-3">
+                                    <div className="form-group">
+                                        <label>Voornaam</label>
+                                        <input className="form-input" required value={editingDriver.first_name} onChange={e => setEditingDriver({ ...editingDriver, first_name: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Achternaam</label>
+                                        <input className="form-input" required value={editingDriver.last_name} onChange={e => setEditingDriver({ ...editingDriver, last_name: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Afk. (bijv. VER)</label>
+                                        <input className="form-input" required maxLength={3} value={editingDriver.abbreviation} onChange={e => setEditingDriver({ ...editingDriver, abbreviation: e.target.value.toUpperCase() })} />
+                                    </div>
+                                </div>
+                                <div className="grid-3" style={{ marginTop: 12 }}>
+                                    <div className="form-group">
+                                        <label>Nummer</label>
+                                        <input className="form-input" type="number" required value={editingDriver.number} onChange={e => setEditingDriver({ ...editingDriver, number: e.target.value })} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Team</label>
+                                        <select className="form-input" value={editingDriver.constructor_id || ''} onChange={e => setEditingDriver({ ...editingDriver, constructor_id: e.target.value })}>
+                                            <option value="">— Geen Team —</option>
+                                            {constructors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Waarde ($)</label>
+                                        <input className="form-input" type="number" required value={editingDriver.current_value} onChange={e => setEditingDriver({ ...editingDriver, current_value: parseInt(e.target.value) || 0 })} />
+                                    </div>
+                                </div>
+                                <div className="grid-2" style={{ marginTop: 12 }}>
+                                    <div className="form-group">
+                                        <label>Avatar / Foto URL</label>
+                                        <input className="form-input" placeholder="https://..." value={editingDriver.avatar_url || ''} onChange={e => setEditingDriver({ ...editingDriver, avatar_url: e.target.value })} />
+                                    </div>
+                                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24 }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={editingDriver.active} onChange={e => setEditingDriver({ ...editingDriver, active: e.target.checked })} />
+                                            <span>Coureur is Actief</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                                    <button type="submit" className="btn btn-primary" disabled={saving}>
+                                        💾 Wijzigingen Opslaan
+                                    </button>
+                                    <button type="button" className="btn btn-secondary" onClick={() => setEditingDriver(null)} disabled={saving}>
+                                        Annuleren
+                                    </button>
+                                </div>
                             </form>
                         )}
 
@@ -826,13 +925,14 @@ export default function AdminDashboard() {
                                         <th>Team</th>
                                         <th>Waarde</th>
                                         <th>Actief</th>
+                                        <th style={{ textAlign: 'right' }}>Acties</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {drivers.map(d => (
                                         <tr key={d.id} style={{ opacity: d.active ? 1 : 0.5 }}>
                                             <td style={{ fontWeight: 600 }}>
-                                                {d.abbreviation} — {d.first_name} {d.last_name}
+                                                {d.abbreviation} — {d.first_name} {d.last_name} #{d.number}
                                             </td>
                                             <td>
                                                 <select
@@ -870,6 +970,28 @@ export default function AdminDashboard() {
                                                     onChange={(e) => updateDriver(d.id, { active: e.target.checked })}
                                                     disabled={saving}
                                                 />
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <button
+                                                    className="btn btn-secondary btn-small"
+                                                    onClick={() => {
+                                                        setShowAddForm(false);
+                                                        setEditingDriver({
+                                                            id: d.id,
+                                                            first_name: d.first_name || '',
+                                                            last_name: d.last_name || '',
+                                                            abbreviation: d.abbreviation || '',
+                                                            number: d.number || '',
+                                                            constructor_id: d.constructor_id || '',
+                                                            current_value: d.current_value || 10000000,
+                                                            avatar_url: d.avatar_url || '',
+                                                            active: d.active ?? true
+                                                        });
+                                                    }}
+                                                    disabled={saving}
+                                                >
+                                                    ✏️ Bewerken
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}

@@ -1,6 +1,7 @@
 // Maps driver abbreviation to their icon filename
 const driverIcons = {
     VER: 'verstappen',
+    TSU: 'tsunoda',
     HAD: 'hadjar',
     NOR: 'norris',
     PIA: 'piastri',
@@ -22,6 +23,19 @@ const driverIcons = {
     BOR: 'bortoleto',
     PER: 'perez',
     BOT: 'bottas',
+    DOO: 'doohan',
+    ZHO: 'guanyu',
+    IWA: 'iwasa',
+    ARO: 'aron',
+    BRO: 'browning',
+    CRA: 'crawford',
+    FOR: 'fornaroli',
+    GIO: 'giovinazzi',
+    HAR: 'harakawa',
+    MAI: 'maini',
+    OWA: "o'ward",
+    VAN: 'vandoorne',
+    VES: 'vesti',
 }
 
 export function getDriverIcon(abbreviation, winning = false) {
@@ -35,7 +49,12 @@ export function getDriverIcon(abbreviation, winning = false) {
 }
 
 export function DriverAvatar({ abbreviation, name, src, size = 40, className = '', winning = false }) {
-    let icon = (winning && getDriverIcon(abbreviation, true)) || src || getDriverIcon(abbreviation, false)
+    let rawSrc = src
+    if (rawSrc && typeof rawSrc === 'string' && !rawSrc.startsWith('http://') && !rawSrc.startsWith('https://') && !rawSrc.startsWith('data:')) {
+        if (rawSrc.startsWith('drivers/')) rawSrc = '/' + rawSrc
+        else if (!rawSrc.startsWith('/')) rawSrc = '/drivers/' + rawSrc
+    }
+    let icon = (winning && getDriverIcon(abbreviation, true)) || rawSrc || getDriverIcon(abbreviation, false)
     if (icon && icon.startsWith('/drivers/') && !icon.includes('?')) {
         icon += '?v=2026'
     }
